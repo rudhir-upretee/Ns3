@@ -27,6 +27,9 @@
 #include <stdint.h>
 #include "ns3/ptr.h"
 #include "ns3/object.h"
+#include "ns3/node-list.h"
+#include "ns3/node.h"
+#include "TraciClient.h"
 
 namespace ns3 {
 
@@ -77,8 +80,7 @@ class Ns2MobilityHelper
 {
 public:
   /**
-   * \param filename filename of file which contains the
-   *        ns2 movement trace.
+   * \param
    */
   Ns2MobilityHelper (std::string filename);
 
@@ -88,8 +90,9 @@ public:
    * whose nodeId is matches the nodeId of the nodes in the trace
    * file.
    */
-  void Install (void) const;
+  void Install ();
 
+#if 0
   /**
    * \param begin an iterator which points to the start of the input
    *        object array.
@@ -103,49 +106,32 @@ public:
    */
   template <typename T>
   void Install (T begin, T end) const;
+#endif
+
 private:
+  EventId m_event;   // Event. May be canceled if needed.
+  NodeList::Iterator m_nodelist_begin;
+  NodeList::Iterator m_nodelist_end;
+  TraciClient* m_traci_client;
+
+#if 0
   class ObjectStore
   {
-public:
+  public:
     virtual ~ObjectStore () {}
     virtual Ptr<Object> Get (uint32_t i) const = 0;
   };
   void ConfigNodesMovements (const ObjectStore &store) const;
-  Ptr<ConstantVelocityMobilityModel> GetMobilityModel (std::string idString, const ObjectStore &store) const;
-  std::string m_filename;
+  Ptr<ConstantVelocityMobilityModel> GetMobilityModel (int id, const ObjectStore &store) const;
+  void SetMobilityModelForAll (const ObjectStore &store) const;
+#endif
+
+  void ConfigNodesMovements ();
+  Ptr<ConstantVelocityMobilityModel> GetMobilityModel (int id);
+  void SetMobilityModelForAll ();
+  Ptr<Object> GetObject(int id);
+  void StartMotionUpdate ();
 };
-
-} // namespace ns3
-
-namespace ns3 {
-
-template <typename T>
-void 
-Ns2MobilityHelper::Install (T begin, T end) const
-{
-  class MyObjectStore : public ObjectStore
-  {
-public:
-    MyObjectStore (T begin, T end)
-      : m_begin (begin),
-        m_end (end)
-    {}
-    virtual Ptr<Object> Get (uint32_t i) const {
-      T iterator = m_begin;
-      iterator += i;
-      if (iterator >= m_end)
-        {
-          return 0;
-        }
-      return *iterator;
-    }
-private:
-    T m_begin;
-    T m_end;
-  };
-  ConfigNodesMovements (MyObjectStore (begin, end));
-}
-
 
 } // namespace ns3
 
