@@ -166,26 +166,9 @@ Ns2MobilityHelper::GetMobilityModel (int id)
 
 void Ns2MobilityHelper::StartMotionUpdate ()
 {
-	//int inetAddrSentFlag = 0;
 	int n = -1;
 	char cmdBuf[256];
 	char statBuf[1024];
-
-#if 0
-	if(sumoStepCnt++ < 70) {
-		bzero(cmdBuf, sizeof(cmdBuf));
-		if(sumoStepCnt == 20) {
-			strcpy(cmdBuf, "veh0,maxspeed;nil,simstep");
-		} else if(sumoStepCnt == 60){
-			strcpy(cmdBuf, "veh1,maxspeedb;nil,simstep");
-		} else {
-			strcpy(cmdBuf, "nil,simstep"); }
-		n = m_traci_client->sendData(cmdBuf, strlen(cmdBuf));
-		if (n < 0) {
-			NS_LOG_ERROR ("ERROR sending to socket");
-			exit(1);
-		}
-#endif
 
 		// Request for vehicle status to Traci
 		bzero(cmdBuf, sizeof(cmdBuf));
@@ -250,16 +233,6 @@ void Ns2MobilityHelper::StartMotionUpdate ()
 	    }
 
 		m_event = Simulator::Schedule (Seconds(1), &Ns2MobilityHelper::StartMotionUpdate, this);
-#if 0
-	} else {
-
-		// Stop the sumo traci client program
-		bzero(cmdBuf, sizeof(cmdBuf));
-		strcpy(cmdBuf, "bye");
-		m_traci_client->sendData(cmdBuf, strlen(cmdBuf));
-		m_traci_client->stop();
-	}
-#endif
 }
 
 void
