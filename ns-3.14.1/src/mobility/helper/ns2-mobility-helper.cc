@@ -33,7 +33,7 @@
 #include "ns3/node-list.h"
 #include "ns3/node.h"
 #include "ns3/constant-velocity-mobility-model.h"
-#include "ns2-mobility-helper.h"
+#include "ns3/ns2-mobility-helper.h"
 
 #include "ns3/core-module.h"
 #include "ns3/internet-module.h"
@@ -179,8 +179,7 @@ void Ns2MobilityHelper::StartMotionUpdate ()
 		} else if(sumoStepCnt == 60){
 			strcpy(cmdBuf, "veh1,maxspeedb;nil,simstep");
 		} else {
-			strcpy(cmdBuf, "nil,simstep");
-		}
+			strcpy(cmdBuf, "nil,simstep"); }
 		n = m_traci_client->sendData(cmdBuf, strlen(cmdBuf));
 		if (n < 0) {
 			NS_LOG_ERROR ("ERROR sending to socket");
@@ -272,7 +271,6 @@ Ns2MobilityHelper::ConfigNodesMovements ()
 	// Prepare the Traci Client
 	m_traci_client = new TraciClient();
 	m_traci_client->start();
-
     StartMotionUpdate();
 }
 
