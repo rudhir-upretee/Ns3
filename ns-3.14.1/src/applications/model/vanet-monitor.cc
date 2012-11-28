@@ -100,21 +100,14 @@ namespace ns3
             m_socket->SetAllowBroadcast(true);
             m_socket->ShutdownRecv();
             }
-        // Insure no pending event
-        //CancelEvents ();
-        // If we are not yet connected, there is nothing to do here
-        // The ConnectionComplete upcall will start timers at that time
-        //if (!m_connected) return;
+
         ScheduleStartEvent();
         }
 
     void VanetMonitorApplication::ScheduleStartEvent()
-        {  // Schedules the event to start sending data (switch to the "On" state)
+        {
         NS_LOG_FUNCTION_NOARGS ();
 
-        //Time offInterval = Seconds (m_offTime.GetValue ());
-        //NS_LOG_LOGIC ("start at " << offInterval);
-        //m_startStopEvent = Simulator::Schedule (offInterval, &VanetMonitorApplication::StartSending, this);
         m_startStopEvent = Simulator::Schedule(Seconds(1.0),
                 &VanetMonitorApplication::StartReadingStatus, this);
         }
@@ -125,10 +118,8 @@ namespace ns3
 
         double x = 0.0, y = 0.0, speed = 0.0;
         int id = GetNode()->GetId();
-        //m_sumoCmdTrace(id);
+
         m_sumoCmdTrace(id, &x, &y, &speed);
-        //Ptr<Ns2MobilityHelper> obj = GetObject<Ns2MobilityHelper>();
-        //obj->GetVehicleStatus(id, &x, &y, &speed);
 
         NS_LOG_DEBUG ("Node : " << id <<
                 " Pos x: " << x <<
