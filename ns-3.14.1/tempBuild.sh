@@ -11,11 +11,10 @@
 #
 # Prefix     : prefix_func, prefix_time, prefix_node
 ###############################################################################
-MOD1="OnOffApplication=level_debug|prefix_func"
-MOD2="PacketSink=level_debug|prefix_func"
-MOD3="VanetApp=level_debug"
-MOD4="Ns2MobilityHelper=level_debug|prefix_func"
-ENV_LOG="NS_LOG=$MOD1:$MOD2:$MOD3:$MOD4"
+MOD1="VanetApp=level_debug|prefix_func"
+MOD2="VanetMonitorApplication=level_debug|prefix_func"
+MOD3="Ns2MobilityHelper=level_debug|prefix_func"
+ENV_LOG="NS_LOG=$MOD1:$MOD2:$MOD3"
 export $ENV_LOG
 
 ## Catch ctrl-c interrupt
