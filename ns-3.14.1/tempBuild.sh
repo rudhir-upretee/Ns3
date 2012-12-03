@@ -13,7 +13,7 @@
 ###############################################################################
 MOD1="VanetApp=level_debug|prefix_func"
 MOD2="VanetMonitorApplication=level_debug|prefix_func"
-MOD3="Ns2MobilityHelper=level_debug|prefix_func"
+MOD3="Ns2MobilityHelper=level_debug|prefix_func|prefix_time"
 ENV_LOG="NS_LOG=$MOD1:$MOD2:$MOD3"
 export $ENV_LOG
 
@@ -37,4 +37,4 @@ trap ctrl_c SIGINT
 #./waf --run "scratch/vanetApp --nWifi=10 --simulatorStopTime=10" --vis
 #./waf --run "main-random-walk" --vis
 ###############################################################################
-./waf --run "scratch/vanetApp --nWifi=10 --simulatorStopTime=30" 
+./waf --run "scratch/vanetApp --nWifi=10 --simulatorStopTime=150" 

@@ -51,6 +51,8 @@ using namespace std;
 namespace ns3
     {
     // Declare static member variables
+    static std::map<int, Vector> currPos;
+    static std::map<int, double> currSpeed;
     static int prevStatCnt = 0;
     static int nodeId[MAX_NODE_CNT];
     static double xcoord[MAX_NODE_CNT];
@@ -61,7 +63,12 @@ namespace ns3
 
     Ns2MobilityHelper::Ns2MobilityHelper(std::string filename)
         {
-        // Do nothing
+        //Initialize node seen array
+        for (int i = 0; i < MAX_NODE_CNT; i++)
+            {
+            nodeIdSeen[i] = -99;
+            }
+        nodeSeenCnt = 0;
         }
 
     void Ns2MobilityHelper::HookAppCallbacks()
@@ -88,7 +95,7 @@ namespace ns3
         m_traci_client->start();
 
         //StartMotionUpdate();
-        m_event = Simulator::Schedule(Seconds(1),
+        m_event = Simulator::Schedule(Seconds(1.0),
                                       &Ns2MobilityHelper::StartMotionUpdate,
                                       this);
         }
@@ -119,7 +126,7 @@ namespace ns3
             }
         //NS_LOG_DEBUG ("Echo from server : " << statBuf);
 
-        if (parseStatus(statBuf) == -1)
+        if (ParseStatus(statBuf) == -1)
             {
             return;
             }
@@ -148,39 +155,93 @@ namespace ns3
                 continue;
                 }
 
-            if (std::find(nodeIdEnteredSim.begin(), nodeIdEnteredSim.end(), nId)
-                    != nodeIdEnteredSim.end())
+            if (IsNodeSeenFirstTime(nId) == true)
                 {
-                //
-                // Node seen for the first time
-
+                // Initialization
                 Ns2MobilityHelper::DestinationPoint point;
-                point.m_finalPosition = SetInitialPosition(model,
+                point.m_startPosition = SetInitialPosition(model,
                                                            xcoord[i],
                                                            ycoord[i]);
-                last_pos[nId] = point;
+                point.m_finalPosition = point.m_startPosition;
+                point.m_speed = Vector(0,0,0);
+                point.m_travelStartTime = Simulator::Now().GetSeconds();
+                point.m_targetArrivalTime = Simulator::Now().GetSeconds();
+
+                // Update the m_lastMotionUpdate and position reached vector
+                m_lastMotionUpdate[nId] = point;
+                currPos[nId] = point.m_startPosition;
+                currSpeed[nId] = 0.0;
+
                 NS_LOG_DEBUG ("Initial position for node " << nId <<
-                        " position = " << last_pos[nId].m_finalPosition);
+                        " position = " << m_lastMotionUpdate[nId].m_startPosition);
 
                 // Save the Node Ids that are seen so far
-                nodeIdEnteredSim.push_back(nId);
+                SetNodeSeen(nId);
                 }
             else
                 {
                 //
                 // Node seen second time onwards
 
-                last_pos[nId] = SetMovement(model,
-                                            last_pos[nId].m_finalPosition,
+                NS_LOG_DEBUG ("Last Destination for node " << " " << nId
+                        << " = " << m_lastMotionUpdate[nId].m_finalPosition);
+
+                double now = Simulator::Now().GetSeconds();
+                if (m_lastMotionUpdate[nId].m_targetArrivalTime > now)
+                    {
+                    double actuallytraveled = now
+                            - m_lastMotionUpdate[nId].m_travelStartTime;
+                    Vector reached = Vector(m_lastMotionUpdate[nId].m_startPosition.x
+                                                    + m_lastMotionUpdate[nId].m_speed.x
+                                                            * actuallytraveled,
+                                            m_lastMotionUpdate[nId].m_startPosition.y
+                                                    + m_lastMotionUpdate[nId].m_speed.y
+                                                            * actuallytraveled,
+                                            0
+
+                                            );
+
+                    NS_LOG_DEBUG ("Did not reach a destination! stoptime = " <<
+                            m_lastMotionUpdate[nId].m_targetArrivalTime <<
+                            ", now = " << now);
+
+                    NS_LOG_DEBUG ("Reached position for node " << " " << nId
+                            << " = " << reached);
+
+                    m_lastMotionUpdate[nId].m_stopEvent.Cancel();
+                    m_lastMotionUpdate[nId].m_finalPosition = reached;
+
+                    // Update the position reached vector
+                    currPos[nId] = reached;
+                    }
+                else
+                    {
+                    // Update the position reached vector
+                    currPos[nId].x = m_lastMotionUpdate[nId].m_finalPosition.x;
+                    currPos[nId].y = m_lastMotionUpdate[nId].m_finalPosition.y;
+                    currPos[nId].z = m_lastMotionUpdate[nId].m_finalPosition.z;
+
+                    NS_LOG_DEBUG ("Reach a destination! stoptime = " <<
+                            m_lastMotionUpdate[nId].m_targetArrivalTime <<
+                            ", now = " << now);
+
+                    NS_LOG_DEBUG ("Reached position for node " << " " << nId
+                            << " position =" << currPos[nId]);
+                    }
+
+                // Move the node
+                m_lastMotionUpdate[nId] = SetMovement(model,
+                                            m_lastMotionUpdate[nId].m_finalPosition,
                                             xcoord[i],
                                             ycoord[i],
                                             speed[i]);
-                NS_LOG_DEBUG ("Positions after parse for node " << " " << nId
-                        << " position =" << last_pos[nId].m_finalPosition);
+
+                // Update current speed
+                currSpeed[nId] = speed[i];
                 }
             }
 
-        m_event = Simulator::Schedule(Seconds(1),
+        m_event = Simulator::Schedule(Seconds(1.0),
                                       &Ns2MobilityHelper::StartMotionUpdate,
                                       this);
         }
@@ -188,17 +249,16 @@ namespace ns3
     void Ns2MobilityHelper::SetMobilityModelForAll()
         {
         int nodeId = 0;
-        //Ptr<Object> object = store.Get (nodeId);
         Ptr<Object> object = GetObject(nodeId);
 
         while (object != 0)
             {
             NS_LOG_DEBUG("Set mobility for node "<< nodeId);
 
-            Ptr<ConstantVelocityMobilityModel> model = CreateObject<
-                    ConstantVelocityMobilityModel>();
+            Ptr<ConstantVelocityMobilityModel> model =
+                    CreateObject<ConstantVelocityMobilityModel>();
             object->AggregateObject(model);
-            //object = store.Get(++nodeId);
+
             object = GetObject(++nodeId);
             }
         }
@@ -218,7 +278,6 @@ namespace ns3
     Ptr<ConstantVelocityMobilityModel> Ns2MobilityHelper::GetMobilityModel(
             int id)
         {
-        //Ptr<Object> object = store.Get (id);
         Ptr<Object> object = GetObject(id);
         if (object == 0)
             {
@@ -244,19 +303,12 @@ namespace ns3
         Ns2MobilityHelper::DestinationPoint retval;
         retval.m_startPosition = last_pos;
         retval.m_finalPosition = last_pos;
-        //retval.m_travelStartTime = at;
-        //retval.m_targetArrivalTime = at;
+        retval.m_travelStartTime = Simulator::Now().GetSeconds();
+        retval.m_targetArrivalTime = Simulator::Now().GetSeconds();
 
         if (speed == 0)
             {
-#if 0
             //We have to maintain last position, and stop the movement
-            retval.m_stopEvent =
-            Simulator::Schedule(Seconds(at),
-                    &ConstantVelocityMobilityModel::SetVelocity,
-                    model,
-                    Vector(0, 0, 0));
-#endif
             model->SetVelocity(Vector(0, 0, 0));
             return retval;
             }
@@ -280,24 +332,23 @@ namespace ns3
             // quick and dirty set zSpeed = 0
             double zSpeed = 0;
 
-            NS_LOG_DEBUG ("Calculated Speed: X=" << xSpeed << " Y=" << ySpeed << " Z=" << zSpeed);
+            NS_LOG_DEBUG ("Calculated Speed: X=" << xSpeed << " Y=" << ySpeed
+                    << " Z=" << zSpeed);
 
-            // Set the Values
 #if 0
-            Simulator::Schedule(Seconds(at),
-                                &ConstantVelocityMobilityModel::SetVelocity,
-                                model,
-                                Vector(xSpeed, ySpeed, zSpeed));
             retval.m_stopEvent =
-                    Simulator::Schedule(Seconds(at + time),
+                    Simulator::Schedule(Seconds(time),
                                         &ConstantVelocityMobilityModel::SetVelocity,
                                         model,
                                         Vector(0, 0, 0));
 #endif
+
             model->SetVelocity(Vector(xSpeed, ySpeed, zSpeed));
+            retval.m_targetArrivalTime += time;
+
+            // These values will be same as xFinalPosition and yFinalPosition
             retval.m_finalPosition.x += xSpeed * time;
             retval.m_finalPosition.y += ySpeed * time;
-            //retval.m_targetArrivalTime += time;
             }
         return retval;
         }
@@ -326,8 +377,8 @@ namespace ns3
     // Like:
     // vehId,xcord, ycord,speed
     //
-    //static void parseStatus(char* buf, VehicleInfo* vInfo)
-    int Ns2MobilityHelper::parseStatus(char* buf)
+    //static void ParseStatus(char* buf, VehicleInfo* vInfo)
+    int Ns2MobilityHelper::ParseStatus(char* buf)
         {
         vector<string> allStatus;
 
@@ -361,7 +412,7 @@ namespace ns3
                 //cout << pParams << " ";
                 if (paramCnt == 0)
                     {
-                    nodeId[cnt] = getNodeId(pParams);
+                    nodeId[cnt] = GetNodeId(pParams);
                     }
                 else if (paramCnt == 1)
                     {
@@ -393,7 +444,7 @@ namespace ns3
     // Vehicle id is veh0 or veh1 etc. Node Id needs just the integer
     // number associated with each veh0 or veh1 etc. Extract the id
     // string then convert to integer.
-    int Ns2MobilityHelper::getNodeId(char* str)
+    int Ns2MobilityHelper::GetNodeId(char* str)
         {
         if (str == NULL)
             return -1;
@@ -406,8 +457,15 @@ namespace ns3
         return atoi(strId);
         }
 
-    bool Ns2MobilityHelper::isNodeSeenFirstTime(int id)
+    void Ns2MobilityHelper::SetNodeSeen(int id)
         {
+        nodeIdSeen[nodeSeenCnt] = id;
+        nodeSeenCnt++;
+        }
+
+    bool Ns2MobilityHelper::IsNodeSeenFirstTime(int id)
+        {
+#if 0
         for (vector<int>::iterator it = nodeIdEnteredSim.begin();
                 it != nodeIdEnteredSim.end(); it++)
             {
@@ -416,16 +474,22 @@ namespace ns3
                 return true;
                 }
             }
-        return false;
+#endif
+        for (int i = 0; i < prevStatCnt; i++)
+            {
+            if (nodeIdSeen[i] == id)
+                {
+                return false;
+                }
+            }
+        return true;
         }
 
-    void GetVehicleStatus(string path, int nId, double* x, double* y,
+    void GetVehicleStatus(string path, int nId, double* xPos, double* yPos,
             double* spd)
 
         {
-        NS_LOG_DEBUG ("Called");
-
-        if ((x == NULL) || (y == NULL) || (spd == NULL))
+        if ((xPos == NULL) || (yPos == NULL) || (spd == NULL))
             {
             NS_LOG_ERROR("Null arguments passed");
             return;
@@ -437,19 +501,24 @@ namespace ns3
             {
             if (nodeId[i] == nId)
                 {
-                NS_LOG_DEBUG ("Matched node Id :" << nId);
-                *x = xcoord[i];
-                *y = ycoord[i];
+                NS_LOG_LOGIC ("Matched node Id :" << nId);
+                *xPos = currPos[nId].x;
+                *yPos = currPos[nId].y;
+                *spd = currSpeed[nId];
+#if 0
+                *xPos = xcoord[i];
+                *yPos = ycoord[i];
                 *spd = speed[i];
+#endif
                 return;
                 }
             }
 
         // Node Id does not match. Notify the caller by setting
         // negative values.
-        NS_LOG_DEBUG ("No matching node Id");
-        *x = -1.0;
-        *y = -1.0;
+        NS_LOG_LOGIC ("No matching node Id");
+        *xPos= -1.0;
+        *yPos = -1.0;
         *spd = -1.0;
         return;
         }

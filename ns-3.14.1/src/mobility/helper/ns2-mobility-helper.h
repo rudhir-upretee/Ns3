@@ -58,8 +58,8 @@ namespace ns3
 
         private:
 
-        int nodeIdCnt[MAX_NODE_CNT];
-        std::vector<int> nodeIdEnteredSim;
+        int nodeIdSeen[MAX_NODE_CNT];
+        int nodeSeenCnt;
         EventId m_event;
         NodeList::Iterator m_nodelist_begin;
         NodeList::Iterator m_nodelist_end;
@@ -76,16 +76,21 @@ namespace ns3
             // Speed of the last movement (needed to derive reached destination
             // at next schedule = start + velocity * actuallyTravelled)
             Vector m_speed;
+            EventId m_stopEvent;
+            double m_targetArrivalTime;
+            double m_travelStartTime;
 
             DestinationPoint() :
                     m_startPosition(Vector(0, 0, 0)),
                             m_finalPosition(Vector(0, 0, 0)),
-                            m_speed(Vector(0, 0, 0))
+                            m_speed(Vector(0, 0, 0)),
+                                    m_targetArrivalTime(0),
+                                    m_travelStartTime(0)
                 {
                 }
             ;
             };
-        std::map<int, DestinationPoint> last_pos;
+        std::map<int, DestinationPoint> m_lastMotionUpdate;
 
         void ConfigNodesMovements();
         Ptr<ConstantVelocityMobilityModel> GetMobilityModel(int id);
@@ -97,9 +102,10 @@ namespace ns3
                 double speed);
         Vector SetInitialPosition(Ptr<ConstantVelocityMobilityModel> model,
                 double xcoord, double ycoord);
-        int parseStatus(char* buf);
-        int getNodeId(char* str);
-        bool isNodeSeenFirstTime(int id);
+        int ParseStatus(char* buf);
+        int GetNodeId(char* str);
+        bool IsNodeSeenFirstTime(int id);
+        void SetNodeSeen(int id);
 
         };
 

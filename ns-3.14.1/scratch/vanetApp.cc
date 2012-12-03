@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
     uint32_t nWifi = 2;
     double simulatorStopTime = 101.0;
     double vanetAppStartTime = 0.0;
-    double vanetAppStopTime = 100.0;
+    //double vanetAppStopTime = 100.0;
 
     CommandLine cmd;
     cmd.AddValue("nWifi", "Number of wifi STA devices", nWifi);
@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
         {
         appContainerVanetApp = vanetApp.Install(wifiStaNodes.Get(i));
         appContainerVanetApp.Start(Seconds(vanetAppStartTime));
-        appContainerVanetApp.Stop(Seconds(vanetAppStopTime));
+        appContainerVanetApp.Stop(Seconds(simulatorStopTime));
         }
 
     // Trace sink should be attached after the source has been initialized.
