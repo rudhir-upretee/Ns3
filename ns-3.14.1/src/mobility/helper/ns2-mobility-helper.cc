@@ -60,6 +60,9 @@ namespace ns3
     static double speed[MAX_NODE_CNT];
     static void GetVehicleStatus(string path, int nId, double* x, double* y,
             double* spd);
+    static void SetVehicleStatus(string path, int nId, double x, double y,
+                double spd);
+    static char cmdBuf[256];
 
     Ns2MobilityHelper::Ns2MobilityHelper(std::string filename)
         {
@@ -73,8 +76,10 @@ namespace ns3
 
     void Ns2MobilityHelper::HookAppCallbacks()
         {
-        Config::Connect("/NodeList/*/ApplicationList/0/$ns3::VanetMonitorApplication/SumoCmd",
+        Config::Connect("/NodeList/*/ApplicationList/0/$ns3::VanetMonitorApplication/SumoCmdGet",
                         MakeCallback(&GetVehicleStatus));
+        Config::Connect("/NodeList/*/ApplicationList/0/$ns3::VanetMonitorApplication/SumoCmdSet",
+                        MakeCallback(&SetVehicleStatus));
         }
 
     void Ns2MobilityHelper::Install()
@@ -94,7 +99,10 @@ namespace ns3
         m_traci_client = new TraciClient();
         m_traci_client->start();
 
-        //StartMotionUpdate();
+        // Set default command for SUMO
+        bzero(cmdBuf, sizeof(cmdBuf));
+        strcpy(cmdBuf, "nil,SIMSTEP,nil;nil,GET_STATUS,nil;");
+
         m_event = Simulator::Schedule(Seconds(1.0),
                                       &Ns2MobilityHelper::StartMotionUpdate,
                                       this);
@@ -103,12 +111,9 @@ namespace ns3
     void Ns2MobilityHelper::StartMotionUpdate()
         {
         int n = -1;
-        char cmdBuf[256];
         char statBuf[1024];
 
         // Request for vehicle status to Traci
-        bzero(cmdBuf, sizeof(cmdBuf));
-        strcpy(cmdBuf, "nil,stat");
         n = m_traci_client->sendData(cmdBuf, strlen(cmdBuf));
         if (n < 0)
             {
@@ -465,16 +470,6 @@ namespace ns3
 
     bool Ns2MobilityHelper::IsNodeSeenFirstTime(int id)
         {
-#if 0
-        for (vector<int>::iterator it = nodeIdEnteredSim.begin();
-                it != nodeIdEnteredSim.end(); it++)
-            {
-            if (*it == id)
-                {
-                return true;
-                }
-            }
-#endif
         for (int i = 0; i < prevStatCnt; i++)
             {
             if (nodeIdSeen[i] == id)
@@ -505,11 +500,6 @@ namespace ns3
                 *xPos = currPos[nId].x;
                 *yPos = currPos[nId].y;
                 *spd = currSpeed[nId];
-#if 0
-                *xPos = xcoord[i];
-                *yPos = ycoord[i];
-                *spd = speed[i];
-#endif
                 return;
                 }
             }
@@ -520,6 +510,34 @@ namespace ns3
         *xPos= -1.0;
         *yPos = -1.0;
         *spd = -1.0;
+        return;
+        }
+
+    void SetVehicleStatus(string path, int nId, double xPos, double yPos,
+               double spd)
+        {
+        if ((xPos == -1.0) && (yPos == -1.0) && (spd == -1.0))
+            {
+            NS_LOG_ERROR("Nothing to set");
+            return;
+            }
+
+        // Set status only if the nodeId matches the node Id
+        // present in previous status update array nodeId[].
+        for (int i = 0; i < prevStatCnt; i++)
+            {
+            if (nodeId[i] == nId)
+                {
+                NS_LOG_LOGIC ("Matched node Id :" << nId);
+
+                // Set command
+                bzero(cmdBuf, sizeof(cmdBuf));
+                sprintf(cmdBuf, "veh%d,SET_SPEED,%f;", nId, spd);
+                strcat(cmdBuf, "nil,SIMSTEP,nil;nil,GET_STATUS,nil;");
+                return;
+                }
+            }
+
         return;
         }
 

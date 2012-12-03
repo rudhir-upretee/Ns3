@@ -45,7 +45,8 @@ namespace ns3
         VanetMonitorApplication();
 
         virtual ~VanetMonitorApplication();
-        TracedCallback<int, double*, double*, double*> m_sumoCmdTrace;
+        TracedCallback<int, double*, double*, double*> m_sumoCmdGetTrace;
+        TracedCallback<int, double, double, double> m_sumoCmdSetTrace;
 
         protected:
         virtual void DoDispose(void);

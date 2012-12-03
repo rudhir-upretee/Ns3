@@ -59,9 +59,12 @@ namespace ns3
                           TypeIdValue(UdpSocketFactory::GetTypeId()),
                           MakeTypeIdAccessor(&VanetMonitorApplication::m_tid),
                           MakeTypeIdChecker())
-            .AddTraceSource("SumoCmd", "Send command to SUMO/Traci",
+            .AddTraceSource("SumoCmdGet", "Send get command to SUMO/Traci",
                             MakeTraceSourceAccessor(
-                                &VanetMonitorApplication::m_sumoCmdTrace));
+                            &VanetMonitorApplication::m_sumoCmdGetTrace))
+            .AddTraceSource("SumoCmdSet", "Send set command to SUMO/Traci",
+                            MakeTraceSourceAccessor(
+                            &VanetMonitorApplication::m_sumoCmdSetTrace));
         return tid;
         }
 
@@ -119,7 +122,12 @@ namespace ns3
         double x = 0.0, y = 0.0, speed = 0.0;
         int id = GetNode()->GetId();
 
-        m_sumoCmdTrace(id, &x, &y, &speed);
+        if((id == 0) && (Simulator::Now().GetSeconds() == 100.0))
+            {
+            m_sumoCmdSetTrace(id, -1.0, -1.0, 0.0);
+            }
+
+        m_sumoCmdGetTrace(id, &x, &y, &speed);
 
         NS_LOG_DEBUG ("Node : " << id <<
                 " Pos x: " << x <<

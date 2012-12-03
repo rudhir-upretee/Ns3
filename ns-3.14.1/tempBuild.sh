@@ -37,4 +37,4 @@ trap ctrl_c SIGINT
 #./waf --run "scratch/vanetApp --nWifi=10 --simulatorStopTime=10" --vis
 #./waf --run "main-random-walk" --vis
 ###############################################################################
-./waf --run "scratch/vanetApp --nWifi=10 --simulatorStopTime=150" 
+./waf --run "scratch/vanetApp --nWifi=10 --simulatorStopTime=300"  --vis
