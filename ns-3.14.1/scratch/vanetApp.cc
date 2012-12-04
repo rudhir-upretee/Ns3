@@ -10,7 +10,7 @@
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE("VanetApp");
+NS_LOG_COMPONENT_DEFINE("VanetScript");
 
 ///////////////////////////////////////////////////////////////////////////////
 // Global Constants
@@ -29,8 +29,6 @@ int main(int argc, char *argv[])
     // Default initialization values
     uint32_t nWifi = 2;
     double simulatorStopTime = 101.0;
-    double vanetAppStartTime = 0.0;
-    //double vanetAppStopTime = 100.0;
 
     CommandLine cmd;
     cmd.AddValue("nWifi", "Number of wifi STA devices", nWifi);
@@ -55,9 +53,10 @@ int main(int argc, char *argv[])
     wifiPhy.SetChannel(wifiChannel.Create());
 
     WifiHelper wifi = WifiHelper::Default();
-    wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode",
-            StringValue("OfdmRate54Mbps"));
     NqosWifiMacHelper wifiMac = NqosWifiMacHelper::Default();
+    wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager",
+                                 "DataMode",
+                                 StringValue("OfdmRate54Mbps"));
     wifiMac.SetType("ns3::AdhocWifiMac");
 
     NetDeviceContainer staDevices;
@@ -97,11 +96,13 @@ int main(int argc, char *argv[])
     // Set port number as 1025
     //
     VanetMonitorHelper vanetApp("ns3::UdpSocketFactory",
-            InetSocketAddress("255.255.255.255", 1025));
+                                InetSocketAddress("255.255.255.255", 1025));
+
+    UniformVariable randVarTime(0, 1);
     for (uint32_t i = 0; i < nWifi; i++)
         {
         appContainerVanetApp = vanetApp.Install(wifiStaNodes.Get(i));
-        appContainerVanetApp.Start(Seconds(vanetAppStartTime));
+        appContainerVanetApp.Start(Seconds(randVarTime.GetValue()));
         appContainerVanetApp.Stop(Seconds(simulatorStopTime));
         }
 

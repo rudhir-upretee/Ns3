@@ -41,35 +41,35 @@ namespace ns3
         {
         public:
         static TypeId GetTypeId(void);
-
         VanetMonitorApplication();
-
         virtual ~VanetMonitorApplication();
-        TracedCallback<int, double*, double*, double*> m_sumoCmdGetTrace;
-        TracedCallback<int, double, double, double> m_sumoCmdSetTrace;
 
         protected:
         virtual void DoDispose(void);
+
         private:
         // inherited from Application base class.
         virtual void StartApplication(void);  // Called at Start time
         virtual void StopApplication(void);  // Called at Stop time
-
         //helpers
         void CancelEvents();
-
         // Event handlers
-        void StartReadingStatus();
+        void StartMonitorLoop();
+        void ScheduleStartEvent();
+        void SendPacket(uint8_t* buf, int size);
+        void RecvPacket (Ptr<Socket> socket);
+        void Ignore(Ptr<Socket>);
+        void ConnectionSucceeded (Ptr<Socket>);
+        void ConnectionFailed (Ptr<Socket>);
 
         Ptr<Socket> m_socket;  // Associated socket
         Address m_peer;  // Peer address
         bool m_connected;  // True if connected
         EventId m_startStopEvent;  // Event id for next start or stop event
         TypeId m_tid;
-        //TracedCallback<int, double*, double*, double*> m_sumoCmdTrace;
+        TracedCallback<int, double*, double*, double*> m_sumoCmdGetTrace;
+        TracedCallback<int, double, double, double> m_sumoCmdSetTrace;
 
-        void ScheduleStartEvent();
-        void Ignore(Ptr<Socket>);
         };
 
     }  // namespace ns3

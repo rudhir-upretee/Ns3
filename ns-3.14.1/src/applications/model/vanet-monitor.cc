@@ -37,12 +37,20 @@
 #include "ns3/udp-socket-factory.h"
 #include "vanet-monitor.h"
 
-NS_LOG_COMPONENT_DEFINE("VanetMonitorApplication");
+NS_LOG_COMPONENT_DEFINE("VanetMonitorApp");
 
 using namespace std;
 
 namespace ns3
     {
+    typedef struct
+        {
+        int nodeId;
+        double xPos;
+        double yPos;
+        double speed;
+        }PktBuf_t;
+    static PktBuf_t packetBuf;
 
     NS_OBJECT_ENSURE_REGISTERED(VanetMonitorApplication);
 
@@ -98,11 +106,21 @@ namespace ns3
         if (!m_socket)
             {
             m_socket = Socket::CreateSocket(GetNode(), m_tid);
-            m_socket->Bind();
+
+            int port = InetSocketAddress::ConvertFrom(m_peer).GetPort();
+            InetSocketAddress local = InetSocketAddress(Ipv4Address::GetAny(),
+                                                        port);
+            m_socket->Bind(local);
             m_socket->Connect(m_peer);
             m_socket->SetAllowBroadcast(true);
-            m_socket->ShutdownRecv();
+
+            // Hook receive call-back
+            m_socket->SetRecvCallback(MakeCallback(&VanetMonitorApplication::RecvPacket,
+                                                   this));
             }
+
+        // Insure no pending event
+        CancelEvents ();
 
         ScheduleStartEvent();
         }
@@ -111,30 +129,49 @@ namespace ns3
         {
         NS_LOG_FUNCTION_NOARGS ();
 
-        m_startStopEvent = Simulator::Schedule(Seconds(1.0),
-                &VanetMonitorApplication::StartReadingStatus, this);
+        m_startStopEvent = Simulator::Schedule(Seconds(0.1),
+                &VanetMonitorApplication::StartMonitorLoop, this);
         }
 
-    void VanetMonitorApplication::StartReadingStatus()
+    void VanetMonitorApplication::StartMonitorLoop()
         {
         NS_LOG_FUNCTION_NOARGS ();
 
-        double x = 0.0, y = 0.0, speed = 0.0;
+        double xPos = 0.0, yPos = 0.0, speed = 0.0;
         int id = GetNode()->GetId();
 
-        if((id == 0) && (Simulator::Now().GetSeconds() == 100.0))
+        /////////////////////////////////////////////////////////
+        // Change speed for node 0
+        /////////////////////////////////////////////////////////
+        if((id == 0) &&
+                ((Simulator::Now().GetSeconds() > 100.0) &&
+                 (Simulator::Now().GetSeconds() < 101.0)))
             {
             m_sumoCmdSetTrace(id, -1.0, -1.0, 0.0);
             }
 
-        m_sumoCmdGetTrace(id, &x, &y, &speed);
+        /////////////////////////////////////////////////////////
+        // Read status
+        /////////////////////////////////////////////////////////
+        m_sumoCmdGetTrace(id, &xPos, &yPos, &speed);
 
-        NS_LOG_DEBUG ("Node : " << id <<
-                " Pos x: " << x <<
-                " Pos y: " << y <<
-                " Speed: " << speed);
+        /////////////////////////////////////////////////////////
+        // Broadcast status only if the status is valid
+        /////////////////////////////////////////////////////////
+        if((xPos != -1.0) && (yPos != -1.0) && (speed != -1.0))
+            {
+            packetBuf.nodeId = id;
+            packetBuf.xPos = xPos;
+            packetBuf.yPos = yPos;
+            packetBuf.speed = speed;
+            SendPacket((uint8_t*)&packetBuf, sizeof(packetBuf));
+            }
+
+        /////////////////////////////////////////////////////////
+        // Schedule next cycle
+        /////////////////////////////////////////////////////////
         m_startStopEvent = Simulator::Schedule(Seconds(1.0),
-                &VanetMonitorApplication::StartReadingStatus, this);
+                &VanetMonitorApplication::StartMonitorLoop, this);
         }
 
     void VanetMonitorApplication::StopApplication()
@@ -156,8 +193,113 @@ namespace ns3
     void VanetMonitorApplication::CancelEvents()
         {
         NS_LOG_FUNCTION_NOARGS ();
-
         Simulator::Cancel(m_startStopEvent);
+        }
+
+
+    void VanetMonitorApplication::SendPacket (uint8_t* buf, int size)
+        {
+        NS_LOG_FUNCTION_NOARGS ();
+        if(buf == 0)
+            {
+            return;
+            }
+
+        /////////////////////////////////////////////////////////
+        // Send packet
+        /////////////////////////////////////////////////////////
+        NS_LOG_DEBUG ("SenderId=" << GetNode()->GetId()
+                << " Packet("
+                << " id=" << ((PktBuf_t*)buf)->nodeId
+                << " x=" << ((PktBuf_t*)buf)->xPos
+                << " y=" << ((PktBuf_t*)buf)->yPos
+                << " spd=" << ((PktBuf_t*)buf)->speed
+                << ")");
+        Ptr<Packet> packet = Create<Packet> (buf, size);
+
+        m_socket->Send (packet);
+
+        /////////////////////////////////////////////////////////
+        // Check
+        /////////////////////////////////////////////////////////
+        if (InetSocketAddress::IsMatchingType(m_peer))
+            {
+            NS_LOG_INFO ("At time " << Simulator::Now ().GetSeconds ()
+                    << "s VanetMonitorApplication application sent "
+                    << packet->GetSize () << " bytes to "
+                    << InetSocketAddress::ConvertFrom(m_peer).GetIpv4 ()
+                    << " port "
+                    << InetSocketAddress::ConvertFrom (m_peer).GetPort ());
+            }
+        else if (Inet6SocketAddress::IsMatchingType(m_peer))
+            {
+            NS_LOG_INFO ("At time " << Simulator::Now ().GetSeconds ()
+                    << "s VanetMonitorApplication application sent "
+                    << packet->GetSize () << " bytes to "
+                    << Inet6SocketAddress::ConvertFrom(m_peer).GetIpv6 ()
+                    << " port "
+                    << Inet6SocketAddress::ConvertFrom (m_peer).GetPort ());
+            }
+
+        }
+
+    void VanetMonitorApplication::RecvPacket(Ptr<Socket> socket)
+        {
+        NS_LOG_FUNCTION_NOARGS ();
+
+        /////////////////////////////////////////////////////////
+        // Receive packet
+        /////////////////////////////////////////////////////////
+        Ptr<Packet> packet;
+        PktBuf_t packetBuf;
+        packet = socket->Recv();
+        int len = packet->CopyData((uint8_t*) &packetBuf, sizeof(packetBuf));
+        if (len > 0)
+            {
+            NS_LOG_DEBUG ("ReceiverId=" << GetNode()->GetId()
+                    << " Packet("
+                    << " id=" << packetBuf.nodeId
+                    << " x=" << packetBuf.xPos
+                    << " y=" << packetBuf.yPos
+                    << " spd=" << packetBuf.speed
+                    << ")");
+            }
+
+        /////////////////////////////////////////////////////////
+        // Check
+        /////////////////////////////////////////////////////////
+        if (InetSocketAddress::IsMatchingType(m_peer))
+            {
+            NS_LOG_INFO ("At time " << Simulator::Now ().GetSeconds ()
+                    << "s packet sink received "
+                    << packet->GetSize () << " bytes from "
+                    << InetSocketAddress::ConvertFrom(m_peer).GetIpv4 ()
+                    << " port "
+                    << InetSocketAddress::ConvertFrom (m_peer).GetPort ());
+            }
+        else if (Inet6SocketAddress::IsMatchingType(m_peer))
+            {
+            NS_LOG_INFO ("At time " << Simulator::Now ().GetSeconds ()
+                    << "s packet sink received "
+                    << packet->GetSize () << " bytes from "
+                    << Inet6SocketAddress::ConvertFrom(m_peer).GetIpv6 ()
+                    << " port "
+                    << Inet6SocketAddress::ConvertFrom (m_peer).GetPort ());
+            }
+        }
+
+    void VanetMonitorApplication::ConnectionSucceeded (Ptr<Socket>)
+        {
+        NS_LOG_FUNCTION_NOARGS ();
+        NS_LOG_DEBUG ("VanetMonitorApplication, Connection Succeeded");
+        m_connected = true;
+        ScheduleStartEvent ();
+        }
+
+    void VanetMonitorApplication::ConnectionFailed (Ptr<Socket>)
+        {
+        NS_LOG_FUNCTION_NOARGS ();
+        NS_LOG_DEBUG ("VanetMonitorApplication, Connection Failed");
         }
 
     }  // Namespace ns3
