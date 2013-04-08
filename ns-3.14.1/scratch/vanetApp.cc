@@ -85,35 +85,29 @@ int main(int argc, char *argv[])
 
     //////////////////////////////////////////////////////////////////////////
     //
-    // Configure Wifi mobility
+    // Create vehicle state table
     //
     //////////////////////////////////////////////////////////////////////////
-
-    // Create vehicle state table
     MSVehicleStateTable* ptrVehStateTable = new MSVehicleStateTable();
     ptrVehStateTable->testFillVSTable();
 
-#if 0
-    SumoMobilityHelper sumoMobility = SumoMobilityHelper(traciPort,
-                                                         traciHost,
-                                                         ptrVehStateTable,
-                                                         54000+simulatorStartTime,
-                                                         54000+simulatorStopTime);
-#endif
     //////////////////////////////////////////////////////////////////////////
     //
-    // Configure Applications to be installed on the nodes
+    // Configure Applications to be installed on the nodes.
+    // Set remote address as broadcast address.
+    // Set port number as 1025
     //
     //////////////////////////////////////////////////////////////////////////
     ApplicationContainer appContainerVanetApp;
 
-    //
-    // Configure vanetApp application. Set remote address as broadcast address.
-    // Set port number as 1025
-    //
     VanetMonitorHelper vanetApp("ns3::UdpSocketFactory",
                                 InetSocketAddress("255.255.255.255", 1025));
 
+    //////////////////////////////////////////////////////////////////////////
+    //
+    // Configure Wifi mobility
+    //
+    //////////////////////////////////////////////////////////////////////////
     SumoMobilityHelper sumoMobility = SumoMobilityHelper(traciPort,
                                                          traciHost,
                                                          ptrVehStateTable,
@@ -121,21 +115,6 @@ int main(int argc, char *argv[])
                                                          54000+simulatorStopTime,
                                                          &appContainerVanetApp,
                                                          &vanetApp);
-
-#if 0
-    UniformVariable randVarTime(0, 1);
-    for (int i = 0; i < nWifi; i++)
-        {
-        appContainerVanetApp = vanetApp.Install(wifiStaNodes.Get(i));
-        appContainerVanetApp.Start(Seconds(randVarTime.GetValue()));
-        appContainerVanetApp.Stop(Seconds(simulatorStopTime));
-        }
-
-    // Trace sink should be attached after the source has been initialized.
-    // Trace source are in VanetMonitorApplication. So this should be
-    // done after the application initialization.
-    sumoMobility.HookAppCallbacks();
-#endif
 
     //
     // Start simulation

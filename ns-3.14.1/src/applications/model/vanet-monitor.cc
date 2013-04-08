@@ -140,18 +140,6 @@ namespace ns3
         double xPos = 0.0, yPos = 0.0, speed = 0.0;
         int id = GetNode()->GetId();
 
-#if 0
-        /////////////////////////////////////////////////////////
-        // Change speed for node 0
-        /////////////////////////////////////////////////////////
-        if((id == 0) &&
-                ((Simulator::Now().GetSeconds() > 100.0) &&
-                 (Simulator::Now().GetSeconds() < 101.0)))
-            {
-            m_sumoCmdSetTrace(id, -1.0, -1.0, 0.0);
-            }
-#endif
-
         /////////////////////////////////////////////////////////
         // Read status
         /////////////////////////////////////////////////////////
@@ -160,9 +148,6 @@ namespace ns3
         /////////////////////////////////////////////////////////
         // Broadcast status only if the status is valid
         /////////////////////////////////////////////////////////
-#if 0
-        if((xPos != -1.0) && (yPos != -1.0) && (speed != -1.0))
-#endif
         if(speed != -1.0)
             {
             packetBuf.nodeId = id;

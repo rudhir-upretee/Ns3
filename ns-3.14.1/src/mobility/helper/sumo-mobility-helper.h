@@ -70,11 +70,6 @@ namespace ns3
 
         private:
 
-#if 0
-        int nodeIdSeen[MAX_NODE_CNT];
-        int nodeSeenCnt;
-#endif
-
         struct DestinationPoint
             {
             public:
@@ -130,13 +125,6 @@ namespace ns3
                 double xcoord, double ycoord);
         bool isVehicleSeenFirstTime(std::string);
         void attachNodeAppAndMobilityFor(int nodeId);
-
-#if 0
-        int ParseStatus(char* buf);
-        int GetNodeId(char* str);
-        bool IsNodeSeenFirstTime(int id);
-        void SetNodeSeen(int id);
-#endif
 
         };
 
