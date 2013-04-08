@@ -7,6 +7,8 @@
 #include "ns3/mobility-module.h"
 #include "ns3/csma-module.h"
 #include "ns3/internet-module.h"
+#include "ns3/NetsimTraciClient.h"
+#include "ns3/sumo-mobility-helper.h"
 
 using namespace ns3;
 
@@ -27,11 +29,16 @@ int main(int argc, char *argv[])
     {
     //
     // Default initialization values
-    uint32_t nWifi = 2;
-    double simulatorStopTime = 101.0;
+    int nWifi = 2;
+    int traciPort = 50000;
+    string traciHost = "localhost";
+    int simulatorStartTime = 0;
+    int simulatorStopTime = 0;
 
     CommandLine cmd;
     cmd.AddValue("nWifi", "Number of wifi STA devices", nWifi);
+    cmd.AddValue("traciPort", "TRACI Server Port", traciPort);
+    cmd.AddValue("traciHost", "TRACI Server Host", traciHost);
     cmd.AddValue("simulatorStopTime", "Simulator stop time", simulatorStopTime);
     cmd.Parse(argc, argv);
 
@@ -81,8 +88,16 @@ int main(int argc, char *argv[])
     // Configure Wifi mobility
     //
     //////////////////////////////////////////////////////////////////////////
-    Ns2MobilityHelper ns2 = Ns2MobilityHelper("TraceFile");
-    ns2.Install();
+
+    // Create vehicle state table
+    MSVehicleStateTable* ptrVehStateTable = new MSVehicleStateTable();
+    ptrVehStateTable->testFillVSTable();
+
+    SumoMobilityHelper sumoMobility = SumoMobilityHelper(traciPort,
+                                                         traciHost,
+                                                         ptrVehStateTable,
+                                                         54000+simulatorStartTime,
+                                                         54000+simulatorStopTime);
 
     //////////////////////////////////////////////////////////////////////////
     //
@@ -99,7 +114,7 @@ int main(int argc, char *argv[])
                                 InetSocketAddress("255.255.255.255", 1025));
 
     UniformVariable randVarTime(0, 1);
-    for (uint32_t i = 0; i < nWifi; i++)
+    for (int i = 0; i < nWifi; i++)
         {
         appContainerVanetApp = vanetApp.Install(wifiStaNodes.Get(i));
         appContainerVanetApp.Start(Seconds(randVarTime.GetValue()));
@@ -109,7 +124,7 @@ int main(int argc, char *argv[])
     // Trace sink should be attached after the source has been initialized.
     // Trace source are in VanetMonitorApplication. So this should be
     // done after the application initialization.
-    ns2.HookAppCallbacks();
+    sumoMobility.HookAppCallbacks();
 
     //
     // Start simulation
