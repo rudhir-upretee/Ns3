@@ -13,7 +13,7 @@
 ###############################################################################
 MOD1="VanetScript=level_debug|prefix_func"
 MOD2="VanetMonitorApp=level_debug|prefix_func"
-MOD3="Ns2MobilityHelper=level_debug|prefix_func|prefix_time"
+MOD3="SumoMobilityHelper=level_debug|prefix_func|prefix_time"
 ENV_LOG="NS_LOG=$MOD1:$MOD2:$MOD3"
 export $ENV_LOG
 

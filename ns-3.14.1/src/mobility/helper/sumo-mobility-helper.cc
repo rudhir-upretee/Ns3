@@ -69,15 +69,20 @@ namespace ns3
     SumoMobilityHelper::SumoMobilityHelper(int traciPort,
                                             std::string traciHost,
                                             MSVehicleStateTable* ptrVehStateTable,
-                                            int simulatorStartTime,
-                                            int simulatorStopTime)
+                                            int simStartTime,
+                                            int simStopTime,
+                                            ApplicationContainer* appCont,
+                                            VanetMonitorHelper* app)
         {
         //Initialize
         lastNodeIdSeen = 0;
-
-        //Install (NodeList::Begin (), NodeList::End ());
+        simulatorStartTime = simStartTime;
+        simulatorStopTime = simStopTime;
         m_nodelist_begin = NodeList::Begin();
         m_nodelist_end = NodeList::End();
+        m_app_container = appCont;
+        m_app = app;
+
 
         // First, attach mobility model for all nodes in ns3.
         SetMobilityModelForAll();
@@ -89,6 +94,7 @@ namespace ns3
                                                "traciClientDebug.out");
         m_traci_client->start(traciPort, traciHost);
 
+        // Start Mobility helper
         m_event = Simulator::Schedule(Seconds(1.0),
                                       &SumoMobilityHelper::StartMotionUpdate,
                                       this);
@@ -99,13 +105,26 @@ namespace ns3
         m_traci_client->close();
         }
 
-    void SumoMobilityHelper::HookAppCallbacks()
+    void SumoMobilityHelper::HookAppCallbacksAll()
         {
         Config::Connect("/NodeList/*/ApplicationList/0/$ns3::VanetMonitorApplication/SumoCmdGet",
                         MakeCallback(&GetVehicleStatus));
         Config::Connect("/NodeList/*/ApplicationList/0/$ns3::VanetMonitorApplication/SumoCmdSet",
                         MakeCallback(&SetVehicleStatus));
         }
+
+    void SumoMobilityHelper::HookAppCallbacksFor(int nodeId)
+          {
+          std::ostringstream outGet, outSet;
+
+          outGet <<"/NodeList/"<< nodeId <<
+                  "/ApplicationList/0/$ns3::VanetMonitorApplication/SumoCmdGet";
+          Config::Connect(outGet.str(), MakeCallback(&GetVehicleStatus));
+
+          outSet <<"/NodeList/"<< nodeId <<
+                  "/ApplicationList/0/$ns3::VanetMonitorApplication/SumoCmdSet";
+          Config::Connect(outSet.str(), MakeCallback(&SetVehicleStatus));
+          }
 
 #if 0
     void SumoMobilityHelper::Install()
@@ -138,20 +157,27 @@ namespace ns3
             if(isVehicleSeenFirstTime(vState.Id))
                 {
                 m_vehicleNodeMap.insert(std::make_pair(vState.Id, lastNodeIdSeen++));
+
                 firstSeen = true;
                 }
 
             int nodeId = m_vehicleNodeMap[vState.Id];
-            Ptr<ConstantVelocityMobilityModel> model = GetMobilityModel(nodeId);
-            if (model == 0)
-                {
-                NS_LOG_DEBUG ("Model couldn't be obtained for node : " << nodeId);
-                break;
-                }
+            Ptr<ConstantVelocityMobilityModel> model = 0;
+            NS_LOG_DEBUG ("Vehicle Id: "<< vState.Id << " Node Id: " << nodeId);
 
             if (firstSeen == true)
                 {
-                // Initialization
+                // Attach application and mobility model
+                attachNodeAppAndMobilityFor(nodeId);
+
+                // Get mobility model
+                model = GetMobilityModel(nodeId);
+                if (model == 0)
+                    {
+                    break;
+                    }
+
+                // Initialize position
                 SumoMobilityHelper::DestinationPoint point;
                 point.m_startPosition = SetInitialPosition(model,
                                                            vState.pos_x,
@@ -172,9 +198,7 @@ namespace ns3
                 }
             else
                 {
-                //
                 // Node seen second time onwards
-
                 NS_LOG_DEBUG ("Last Destination for node " << " " << nodeId
                         << " = " << m_lastMotionUpdate[nodeId].m_finalPosition);
 
@@ -222,6 +246,13 @@ namespace ns3
 
                 // Update current speed
                 currSpeed[nodeId] = vState.speed;
+
+                // Get mobility model
+                model = GetMobilityModel(nodeId);
+                if (model == 0)
+                    {
+                    break;
+                    }
 
                 // Move the node
                 m_lastMotionUpdate[nodeId] = SetMovement(model,
@@ -391,7 +422,37 @@ namespace ns3
             }
         }
 
+    void SumoMobilityHelper::SetMobilityModelFor(int nodeId)
+        {
+        Ptr<Object> object = GetObject(nodeId);
+
+        if (object != 0)
+            {
+            NS_LOG_DEBUG("Set mobility for node "<< nodeId);
+
+            Ptr<ConstantVelocityMobilityModel> model =
+                    CreateObject<ConstantVelocityMobilityModel>();
+            object->AggregateObject(model);
+            }
+        else
+            {
+            NS_LOG_DEBUG("This node does not exist "<< nodeId);
+            }
+        }
+
     Ptr<Object> SumoMobilityHelper::GetObject(int id)
+        {
+        NodeList::Iterator iterator = m_nodelist_begin;
+        iterator += id;
+        if (iterator >= m_nodelist_end)
+            {
+            return 0;
+            }
+
+        return *iterator;
+        }
+
+    Ptr<Node> SumoMobilityHelper::GetNode(int id)
         {
         NodeList::Iterator iterator = m_nodelist_begin;
         iterator += id;
@@ -418,8 +479,8 @@ namespace ns3
         if (model == 0)
             {
             NS_LOG_DEBUG("Mobility Model not found for ID "<< id);
-            model = CreateObject<ConstantVelocityMobilityModel>();
-            object->AggregateObject(model);
+            //model = CreateObject<ConstantVelocityMobilityModel>();
+            //object->AggregateObject(model);
             }
         return model;
         }
@@ -611,6 +672,29 @@ namespace ns3
             return true;
             }
         return false;
+        }
+
+    void SumoMobilityHelper::attachNodeAppAndMobilityFor(int nodeId)
+         {
+         Ptr<Node> ptrNode = GetNode(nodeId);
+
+         if(ptrNode != 0)
+             {
+             UniformVariable randVarTime(0, 1);
+             *m_app_container = m_app->Install(ptrNode);
+             (*m_app_container).Start(Seconds(randVarTime.GetValue()));
+             (*m_app_container).Stop(Seconds(simulatorStopTime));
+
+             // Trace sink should be attached after the source has been initialized.
+             // Trace source are in VanetMonitorApplication. So this should be
+             // done after the application initialization.
+             HookAppCallbacksFor(nodeId);
+             }
+         else
+             {
+             NS_LOG_ERROR("This nodeId is invalid "<< nodeId);
+             }
+
         }
 
     void GetVehicleStatus(string path, int nodeId, double* xPos, double* yPos,

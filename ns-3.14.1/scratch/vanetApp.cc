@@ -93,12 +93,13 @@ int main(int argc, char *argv[])
     MSVehicleStateTable* ptrVehStateTable = new MSVehicleStateTable();
     ptrVehStateTable->testFillVSTable();
 
+#if 0
     SumoMobilityHelper sumoMobility = SumoMobilityHelper(traciPort,
                                                          traciHost,
                                                          ptrVehStateTable,
                                                          54000+simulatorStartTime,
                                                          54000+simulatorStopTime);
-
+#endif
     //////////////////////////////////////////////////////////////////////////
     //
     // Configure Applications to be installed on the nodes
@@ -113,6 +114,15 @@ int main(int argc, char *argv[])
     VanetMonitorHelper vanetApp("ns3::UdpSocketFactory",
                                 InetSocketAddress("255.255.255.255", 1025));
 
+    SumoMobilityHelper sumoMobility = SumoMobilityHelper(traciPort,
+                                                         traciHost,
+                                                         ptrVehStateTable,
+                                                         54000+simulatorStartTime,
+                                                         54000+simulatorStopTime,
+                                                         &appContainerVanetApp,
+                                                         &vanetApp);
+
+#if 0
     UniformVariable randVarTime(0, 1);
     for (int i = 0; i < nWifi; i++)
         {
@@ -125,6 +135,7 @@ int main(int argc, char *argv[])
     // Trace source are in VanetMonitorApplication. So this should be
     // done after the application initialization.
     sumoMobility.HookAppCallbacks();
+#endif
 
     //
     // Start simulation

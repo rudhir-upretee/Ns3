@@ -219,11 +219,10 @@ namespace ns3
                 << " x=" << ((PktBuf_t*)buf)->xPos
                 << " y=" << ((PktBuf_t*)buf)->yPos
                 << " spd=" << ((PktBuf_t*)buf)->speed
-                << ")");
+                << " )");
         Ptr<Packet> packet = Create<Packet> (buf, size);
 
         m_socket->Send (packet);
-
         /////////////////////////////////////////////////////////
         // Check
         /////////////////////////////////////////////////////////
@@ -267,7 +266,7 @@ namespace ns3
                     << " x=" << packetBuf.xPos
                     << " y=" << packetBuf.yPos
                     << " spd=" << packetBuf.speed
-                    << ")");
+                    << " )");
             }
 
         /////////////////////////////////////////////////////////

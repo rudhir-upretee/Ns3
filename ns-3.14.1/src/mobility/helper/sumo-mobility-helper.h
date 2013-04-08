@@ -31,6 +31,8 @@
 #include "ns3/object.h"
 #include "ns3/node-list.h"
 #include "ns3/node.h"
+#include "ns3/application-container.h"
+#include "ns3/applications-module.h"
 #include "ns3/MSVehicleStateTable.h"
 #include "ns3/NetsimTraciClient.h"
 
@@ -50,7 +52,9 @@ namespace ns3
                             std::string traciHost,
                             MSVehicleStateTable* ptrVehStateTable,
                             int simulatorStartTime,
-                            int simulatorStopTime);
+                            int simulatorStopTime,
+                            ApplicationContainer* appCont,
+                            VanetMonitorHelper* app);
 
         ~SumoMobilityHelper();
 
@@ -61,20 +65,15 @@ namespace ns3
          * file.
          */
         void Install();
-        void HookAppCallbacks();
+        void HookAppCallbacksAll();
+        void HookAppCallbacksFor(int nodeId);
 
         private:
 
+#if 0
         int nodeIdSeen[MAX_NODE_CNT];
         int nodeSeenCnt;
-        EventId m_event;
-        NodeList::Iterator m_nodelist_begin;
-        NodeList::Iterator m_nodelist_end;
-        NetsimTraciClient* m_traci_client;
-
-        int lastNodeIdSeen;
-        typedef std::map<std::string, int > VehicleNodeMap;
-        VehicleNodeMap m_vehicleNodeMap;
+#endif
 
         struct DestinationPoint
             {
@@ -103,18 +102,34 @@ namespace ns3
             };
         std::map<int, DestinationPoint> m_lastMotionUpdate;
 
+        typedef std::map<std::string, int > VehicleNodeMap;
+        VehicleNodeMap m_vehicleNodeMap;
+
+        EventId m_event;
+        NodeList::Iterator m_nodelist_begin;
+        NodeList::Iterator m_nodelist_end;
+        NetsimTraciClient* m_traci_client;
+        ApplicationContainer* m_app_container;
+        VanetMonitorHelper* m_app;
+
+        int lastNodeIdSeen;
+        int simulatorStartTime;
+        int simulatorStopTime;
+
         void ConfigNodesMovements();
         Ptr<ConstantVelocityMobilityModel> GetMobilityModel(int id);
         void SetMobilityModelForAll();
+        void SetMobilityModelFor(int nodeId);
         Ptr<Object> GetObject(int id);
+        Ptr<Node> GetNode(int id);
         void StartMotionUpdate();
         DestinationPoint SetMovement(Ptr<ConstantVelocityMobilityModel> model,
                 Vector lastPos, double xFinalPosition, double yFinalPosition,
                 double speed);
         Vector SetInitialPosition(Ptr<ConstantVelocityMobilityModel> model,
                 double xcoord, double ycoord);
-
         bool isVehicleSeenFirstTime(std::string);
+        void attachNodeAppAndMobilityFor(int nodeId);
 
 #if 0
         int ParseStatus(char* buf);
