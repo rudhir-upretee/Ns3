@@ -1,0 +1,36 @@
+## -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
+
+def build(bld):
+    module = bld.create_ns3_module('sumo-traci-client', [])
+    module.source = [
+        'model/MSVehicleStateTable.cc',
+        'model/NetsimTraciClient.cc',
+        'model/storage.cc',
+        'model/SUMOTime.cc',
+        'model/TraCISocket.cc',
+        'model/TraCIAPI.cc',
+        ]
+
+    module_test = bld.create_ns3_module_test_library('sumo-traci-client')
+    module_test.source = []
+
+    headers = bld.new_task_gen(features=['ns3header'])
+    headers.module = 'sumo-traci-client'
+    headers.source = [
+        'model/MSVehicleStateTable.h',
+        'model/NetsimTraciClient.h',
+        'model/StdDefs.h',
+        'model/storage.h',
+        'model/SUMOTime.h',
+        'model/ToString.h',
+        'model/TplConvert.h',
+        'model/TraCIConfig.h',
+        'model/TraCISocket.h',
+        'model/TraCIAPI.h',
+        'model/TraCIConstants.h',
+        'model/UtilExceptions.h',
+        ]
+
+    if (bld.env['ENABLE_EXAMPLES']):
+        bld.add_subdirs('examples')
+
