@@ -20,6 +20,8 @@
 // ns3 - On/Off Data Source Application class
 // George F. Riley, Georgia Tech, Spring 2007
 // Adapted from ApplicationOnOff in GTNetS.
+
+#include <cstdlib>
 #include "ns3/log.h"
 #include "ns3/address.h"
 #include "ns3/inet-socket-address.h"
@@ -137,18 +139,37 @@ namespace ns3
         {
         NS_LOG_FUNCTION_NOARGS ();
 
-        double xPos = 0.0, yPos = 0.0, speed = 0.0;
+        double xPos = 0.0, yPos = 0.0, speed = -1.0;
         int id = GetNode()->GetId();
 
         /////////////////////////////////////////////////////////
-        // Read status
+        // Get the nodes state (position + speed)
         /////////////////////////////////////////////////////////
+#if 0
         m_sumoCmdGetTrace(id, &xPos, &yPos, &speed);
+#endif
+        Ptr<ConstantVelocityMobilityModel> model = 0;
+        model = GetMobilityModel();
+        if (model == 0)
+            {
+            NS_LOG_DEBUG("Mobility Model not found for ID "<< GetNode()->GetId());
+            }
+        else
+            {
+            Vector vel = model->GetVelocity();
+            double xVel = vel.x;
+            double yVel = vel.y;
+            speed = sqrt(pow(xVel,2) + pow(yVel,2));
+
+            Vector pos = model->GetPosition();
+            xPos = pos.x;
+            yPos = pos.y;
+            }
 
         /////////////////////////////////////////////////////////
-        // Broadcast status only if the status is valid
+        // Broadcast state only if the state is valid
         /////////////////////////////////////////////////////////
-        if(speed != -1.0)
+        if(speed > -1.0)
             {
             packetBuf.nodeId = id;
             packetBuf.xPos = xPos;
@@ -198,7 +219,7 @@ namespace ns3
         /////////////////////////////////////////////////////////
         // Send packet
         /////////////////////////////////////////////////////////
-        NS_LOG_DEBUG ("SenderId=" << GetNode()->GetId()
+        NS_LOG_DEBUG ("Sender Node:" << GetNode()->GetId()
                 << " Packet("
                 << " id=" << ((PktBuf_t*)buf)->nodeId
                 << " x=" << ((PktBuf_t*)buf)->xPos
@@ -208,6 +229,7 @@ namespace ns3
         Ptr<Packet> packet = Create<Packet> (buf, size);
 
         m_socket->Send (packet);
+
         /////////////////////////////////////////////////////////
         // Check
         /////////////////////////////////////////////////////////
@@ -245,7 +267,7 @@ namespace ns3
         int len = packet->CopyData((uint8_t*) &packetBuf, sizeof(packetBuf));
         if (len > 0)
             {
-            NS_LOG_DEBUG ("ReceiverId=" << GetNode()->GetId()
+            NS_LOG_DEBUG ("Receiver Node:" << GetNode()->GetId()
                     << " Packet("
                     << " id=" << packetBuf.nodeId
                     << " x=" << packetBuf.xPos
@@ -275,6 +297,10 @@ namespace ns3
                     << " port "
                     << Inet6SocketAddress::ConvertFrom (m_peer).GetPort ());
             }
+
+        /////////////////////////////////////////////////////////
+        // Save all the neighboring nodes state (position + speed)
+        /////////////////////////////////////////////////////////
         }
 
     void VanetMonitorApplication::ConnectionSucceeded (Ptr<Socket>)
@@ -289,6 +315,16 @@ namespace ns3
         {
         NS_LOG_FUNCTION_NOARGS ();
         NS_LOG_DEBUG ("VanetMonitorApplication, Connection Failed");
+        }
+
+    Ptr<ConstantVelocityMobilityModel>
+    VanetMonitorApplication::GetMobilityModel()
+        {
+        Ptr<Object> object = GetNode();
+
+        Ptr<ConstantVelocityMobilityModel> model = object
+                ->GetObject<ConstantVelocityMobilityModel>();
+        return model;
         }
 
     }  // Namespace ns3

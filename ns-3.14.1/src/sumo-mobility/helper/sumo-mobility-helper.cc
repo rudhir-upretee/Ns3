@@ -85,7 +85,7 @@ namespace ns3
         m_traci_client->start(traciPort, traciHost);
 
         // Start Mobility helper
-        m_event = Simulator::Schedule(Seconds(1.0),
+        m_event = Simulator::Schedule(Seconds(0.1),
                                       &SumoMobilityHelper::StartMotionUpdate,
                                       this);
         }
@@ -95,7 +95,7 @@ namespace ns3
         m_traci_client->close();
         }
 
-    void SumoMobilityHelper::HookAppCallbacksAll()
+    void SumoMobilityHelper::HookAppCallbacksForAll()
         {
         Config::Connect("/NodeList/*/ApplicationList/0/$ns3::VanetMonitorApplication/SumoCmdGet",
                         MakeCallback(&GetVehicleStatus));
@@ -118,8 +118,11 @@ namespace ns3
 
     void SumoMobilityHelper::StartMotionUpdate()
         {
+        // Move simulation in SUMO. This will also update the state table
+        // of all the vehicles.
         m_traci_client->advanceSumoStep();
 
+        // Move nodes in Ns3
         for (int i = 0; i < m_traci_client->getVehicleStateListCnt(); i++)
             {
             bool firstSeen = false;
@@ -141,8 +144,9 @@ namespace ns3
 
             int nodeId = m_vehicleNodeMap[vState.Id];
             Ptr<ConstantVelocityMobilityModel> model = 0;
+#if 0
             NS_LOG_DEBUG ("Vehicle Id: "<< vState.Id << " Node Id: " << nodeId);
-
+#endif
             if (firstSeen == true)
                 {
                 // Attach application and mobility model
@@ -170,42 +174,52 @@ namespace ns3
                 currPos[nodeId] = point.m_startPosition;
                 currSpeed[nodeId] = vState.speed;
 
-                NS_LOG_DEBUG ("Initial position for node " << nodeId <<
-                        " position = " << m_lastMotionUpdate[nodeId].m_startPosition);
+                NS_LOG_DEBUG (" Node:" << nodeId <<
+                                " vehicle:" << vState.Id <<
+                                " Init position = " << m_lastMotionUpdate[nodeId].m_startPosition);
 
                 }
             else
                 {
                 // Node seen second time onwards
+#if 0
                 NS_LOG_DEBUG ("Last Destination for node " << " " << nodeId
                         << " = " << m_lastMotionUpdate[nodeId].m_finalPosition);
-
+#endif
                 double now = Simulator::Now().GetSeconds();
                 if (m_lastMotionUpdate[nodeId].m_targetArrivalTime > now)
                     {
                     double actuallytraveled = now
                             - m_lastMotionUpdate[nodeId].m_travelStartTime;
+
                     Vector reached = Vector(m_lastMotionUpdate[nodeId].m_startPosition.x
-                                                    + m_lastMotionUpdate[nodeId].m_speed.x
-                                                            * actuallytraveled,
+                                            + m_lastMotionUpdate[nodeId].m_speed.x
+                                            * actuallytraveled,
                                             m_lastMotionUpdate[nodeId].m_startPosition.y
-                                                    + m_lastMotionUpdate[nodeId].m_speed.y
-                                                            * actuallytraveled,
+                                            + m_lastMotionUpdate[nodeId].m_speed.y
+                                            * actuallytraveled,
                                             0
                                             );
-
-                    NS_LOG_DEBUG ("Did not reach a destination! stoptime = " <<
-                            m_lastMotionUpdate[nodeId].m_targetArrivalTime <<
-                            ", now = " << now);
-
-                    NS_LOG_DEBUG ("Reached position for node " << " " << nodeId
-                            << " = " << reached);
 
                     m_lastMotionUpdate[nodeId].m_stopEvent.Cancel();
                     m_lastMotionUpdate[nodeId].m_finalPosition = reached;
 
                     // Update the position reached vector
                     currPos[nodeId] = reached;
+
+                    NS_LOG_DEBUG (" Node:" << nodeId <<
+                                    " vehicle:" << vState.Id <<
+                                    " reached = " << reached <<
+                                    " dest = " << m_lastMotionUpdate[nodeId].m_finalPosition);
+
+#if 0
+                    NS_LOG_DEBUG ("Did not reach a destination! stoptime = " <<
+                            m_lastMotionUpdate[nodeId].m_targetArrivalTime <<
+                            ", now = " << now);
+
+                    NS_LOG_DEBUG ("Reached position for node " << " " << nodeId
+                            << " = " << reached);
+#endif
                     }
                 else
                     {
@@ -214,12 +228,17 @@ namespace ns3
                     currPos[nodeId].y = m_lastMotionUpdate[nodeId].m_finalPosition.y;
                     currPos[nodeId].z = m_lastMotionUpdate[nodeId].m_finalPosition.z;
 
+                    NS_LOG_DEBUG (" Node:" << nodeId <<
+                                    " vehicle:" << vState.Id <<
+                                    " reached = " << m_lastMotionUpdate[nodeId].m_finalPosition);
+#if 0
                     NS_LOG_DEBUG ("Reach a destination! stoptime = " <<
                           m_lastMotionUpdate[nodeId].m_targetArrivalTime <<
                           ", now = " << now);
 
                     NS_LOG_DEBUG ("Reached position for node " << " " << nodeId
                           << " position =" << currPos[nodeId]);
+#endif
                     }
 
                 // Update current speed
@@ -241,6 +260,10 @@ namespace ns3
                 }
             }
 
+        // Send the vehicle state table to SUMO
+        m_traci_client->sendVSTable();
+
+        // Schedule for next round
         m_event = Simulator::Schedule(Seconds(1.0),
                                       &SumoMobilityHelper::StartMotionUpdate,
                                       this);
@@ -350,8 +373,7 @@ namespace ns3
             double time = sqrt(pow(xFinalPosition - retval.m_finalPosition.x, 2)
                     + pow(yFinalPosition - retval.m_finalPosition.y, 2))
                     / speed;
-            //NS_LOG_DEBUG ("at=" << at << " time=" << time);
-            NS_LOG_DEBUG (" time=" << time);
+
             if (time == 0)
                 {
                 return retval;
@@ -364,8 +386,9 @@ namespace ns3
             // quick and dirty set zSpeed = 0
             double zSpeed = 0;
 
-            NS_LOG_DEBUG ("Calculated Speed: X=" << xSpeed << " Y=" << ySpeed
-                    << " Z=" << zSpeed);
+            NS_LOG_DEBUG ("Travel time = " << time <<
+                            " Calculated Speed: X=" << xSpeed <<
+                            " Y=" << ySpeed << " Z=" << zSpeed);
 
             // Stop motion after reaching the destination point
             retval.m_stopEvent =

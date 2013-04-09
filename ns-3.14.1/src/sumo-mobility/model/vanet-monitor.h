@@ -27,6 +27,7 @@
 #include "ns3/data-rate.h"
 #include "ns3/random-variable.h"
 #include "ns3/traced-callback.h"
+#include "ns3/constant-velocity-mobility-model.h"
 
 namespace ns3
     {
@@ -61,6 +62,7 @@ namespace ns3
         void Ignore(Ptr<Socket>);
         void ConnectionSucceeded (Ptr<Socket>);
         void ConnectionFailed (Ptr<Socket>);
+        Ptr<ConstantVelocityMobilityModel> GetMobilityModel();
 
         Ptr<Socket> m_socket;  // Associated socket
         Address m_peer;  // Peer address

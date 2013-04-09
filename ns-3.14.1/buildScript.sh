@@ -12,7 +12,7 @@
 # Prefix     : prefix_func, prefix_time, prefix_node
 ###############################################################################
 MOD1="VanetScript=level_debug|prefix_func"
-MOD2="VanetMonitorApp=level_debug|prefix_func"
+MOD2="VanetMonitorApp=level_debug|prefix_func|prefix_time"
 MOD3="SumoMobilityHelper=level_debug|prefix_func|prefix_time"
 ENV_LOG="NS_LOG=$MOD1:$MOD2:$MOD3"
 export $ENV_LOG
@@ -37,6 +37,6 @@ trap ctrl_c SIGINT
 #./waf --run "scratch/vanetApp --nWifi=10 --simulatorStopTime=10" --vis
 #./waf --run "main-random-walk" --vis
 ###############################################################################
-./waf --run "scratch/vanetApp --nWifi=200 --traciPort=50000 --traciHost=localhost --simulatorStopTime=50" --vis 
+./waf --run "scratch/vanetApp --nWifi=200 --traciPort=50000 --traciHost=localhost --simulatorStartTime=54000 --simulatorStopTime=54050" --vis 
 #./waf --run "scratch/vanetApp --nWifi=200 --traciPort=50000 --traciHost=localhost --simulatorStopTime=50"  --vis
 #./waf --run "scratch/vanetApp --nWifi=10 --simulatorStopTime=300"  

@@ -32,7 +32,8 @@
 #include "ns3/node-list.h"
 #include "ns3/node.h"
 #include "ns3/application-container.h"
-#include "ns3/applications-module.h"
+//#include "ns3/applications-module.h"
+#include "ns3/vanet-monitor-helper.h"
 #include "ns3/MSVehicleStateTable.h"
 #include "ns3/NetsimTraciClient.h"
 
@@ -65,7 +66,7 @@ namespace ns3
          * file.
          */
         void Install();
-        void HookAppCallbacksAll();
+        void HookAppCallbacksForAll();
         void HookAppCallbacksFor(int nodeId);
 
         private:

@@ -1,7 +1,7 @@
 ## -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
 
 def build(bld):
-    module = bld.create_ns3_module('mobility', ['network', 'sumo-traci-client', 'applications'])
+    module = bld.create_ns3_module('mobility', ['network'])
     module.source = [
         'model/box.cc',
         'model/constant-acceleration-mobility-model.cc',
@@ -22,7 +22,6 @@ def build(bld):
         'helper/mobility-helper.cc',
         'helper/ns2-mobility-helper.cc',
         'helper/TraciClient.cc',
-        'helper/sumo-mobility-helper.cc',
         ]
 
     module_test = bld.create_ns3_module_test_library('mobility')
@@ -54,7 +53,6 @@ def build(bld):
         'helper/mobility-helper.h',
         'helper/ns2-mobility-helper.h',
         'helper/TraciClient.h',
-        'helper/sumo-mobility-helper.h',
         ]
 
     if (bld.env['ENABLE_EXAMPLES']):

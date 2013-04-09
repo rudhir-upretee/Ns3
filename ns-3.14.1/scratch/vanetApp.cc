@@ -39,6 +39,7 @@ int main(int argc, char *argv[])
     cmd.AddValue("nWifi", "Number of wifi STA devices", nWifi);
     cmd.AddValue("traciPort", "TRACI Server Port", traciPort);
     cmd.AddValue("traciHost", "TRACI Server Host", traciHost);
+    cmd.AddValue("simulatorStartTime", "Simulator start time", simulatorStartTime);
     cmd.AddValue("simulatorStopTime", "Simulator stop time", simulatorStopTime);
     cmd.Parse(argc, argv);
 
@@ -105,14 +106,14 @@ int main(int argc, char *argv[])
 
     //////////////////////////////////////////////////////////////////////////
     //
-    // Configure Wifi mobility
+    // Configure Wifi mobility. It uses SUMO Mobility module.
     //
     //////////////////////////////////////////////////////////////////////////
     SumoMobilityHelper sumoMobility = SumoMobilityHelper(traciPort,
                                                          traciHost,
                                                          ptrVehStateTable,
-                                                         54000+simulatorStartTime,
-                                                         54000+simulatorStopTime,
+                                                         simulatorStartTime,
+                                                         simulatorStopTime,
                                                          &appContainerVanetApp,
                                                          &vanetApp);
 

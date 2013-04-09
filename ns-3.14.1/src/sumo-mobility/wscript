@@ -1,7 +1,7 @@
 ## -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
 
 def build(bld):
-    module = bld.create_ns3_module('sumo-traci-client', [])
+    module = bld.create_ns3_module('sumo-mobility', ['internet', 'mobility'])
     module.source = [
         'model/MSVehicleStateTable.cc',
         'model/NetsimTraciClient.cc',
@@ -9,13 +9,16 @@ def build(bld):
         'model/SUMOTime.cc',
         'model/TraCISocket.cc',
         'model/TraCIAPI.cc',
+        'model/vanet-monitor.cc',
+        'helper/vanet-monitor-helper.cc',
+        'helper/sumo-mobility-helper.cc',
         ]
 
-    module_test = bld.create_ns3_module_test_library('sumo-traci-client')
+    module_test = bld.create_ns3_module_test_library('sumo-mobility')
     module_test.source = []
 
     headers = bld.new_task_gen(features=['ns3header'])
-    headers.module = 'sumo-traci-client'
+    headers.module = 'sumo-mobility'
     headers.source = [
         'model/MSVehicleStateTable.h',
         'model/NetsimTraciClient.h',
@@ -29,6 +32,9 @@ def build(bld):
         'model/TraCIAPI.h',
         'model/TraCIConstants.h',
         'model/UtilExceptions.h',
+        'model/vanet-monitor.h',
+        'helper/vanet-monitor-helper.h',
+        'helper/sumo-mobility-helper.h',
         ]
 
     if (bld.env['ENABLE_EXAMPLES']):
