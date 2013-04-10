@@ -131,7 +131,7 @@ namespace ns3
         {
         NS_LOG_FUNCTION_NOARGS ();
 
-        m_startStopEvent = Simulator::Schedule(Seconds(0.1),
+        m_startStopEvent = Simulator::Schedule(Seconds(0.01),
                 &VanetMonitorApplication::StartMonitorLoop, this);
         }
 
@@ -207,7 +207,6 @@ namespace ns3
         Simulator::Cancel(m_startStopEvent);
         }
 
-
     void VanetMonitorApplication::SendPacket (uint8_t* buf, int size)
         {
         NS_LOG_FUNCTION_NOARGS ();
@@ -216,9 +215,6 @@ namespace ns3
             return;
             }
 
-        /////////////////////////////////////////////////////////
-        // Send packet
-        /////////////////////////////////////////////////////////
         NS_LOG_DEBUG ("Sender Node:" << GetNode()->GetId()
                 << " Packet("
                 << " id=" << ((PktBuf_t*)buf)->nodeId
@@ -228,11 +224,12 @@ namespace ns3
                 << " )");
         Ptr<Packet> packet = Create<Packet> (buf, size);
 
+        /////////////////////////////////////////////////////////
+        // Send packet
+        /////////////////////////////////////////////////////////
         m_socket->Send (packet);
 
-        /////////////////////////////////////////////////////////
         // Check
-        /////////////////////////////////////////////////////////
         if (InetSocketAddress::IsMatchingType(m_peer))
             {
             NS_LOG_INFO ("At time " << Simulator::Now ().GetSeconds ()
@@ -258,27 +255,34 @@ namespace ns3
         {
         NS_LOG_FUNCTION_NOARGS ();
 
+        Ptr<Packet> packet;
+        PktBuf_t packetBuf;
+        double xPos = 0.0, yPos = 0.0, speed = -1.0;
+        int nodeId = -1, senderId = -1;
+
         /////////////////////////////////////////////////////////
         // Receive packet
         /////////////////////////////////////////////////////////
-        Ptr<Packet> packet;
-        PktBuf_t packetBuf;
         packet = socket->Recv();
         int len = packet->CopyData((uint8_t*) &packetBuf, sizeof(packetBuf));
         if (len > 0)
             {
-            NS_LOG_DEBUG ("Receiver Node:" << GetNode()->GetId()
+            nodeId = GetNode()->GetId();
+            senderId = packetBuf.nodeId;
+            xPos = packetBuf.xPos;
+            yPos = packetBuf.yPos;
+            speed = packetBuf.speed;
+
+            NS_LOG_DEBUG ("Receiver Node:" << nodeId
                     << " Packet("
-                    << " id=" << packetBuf.nodeId
-                    << " x=" << packetBuf.xPos
-                    << " y=" << packetBuf.yPos
-                    << " spd=" << packetBuf.speed
+                    << " id=" << senderId
+                    << " x=" << xPos
+                    << " y=" << yPos
+                    << " spd=" << speed
                     << " )");
             }
 
-        /////////////////////////////////////////////////////////
         // Check
-        /////////////////////////////////////////////////////////
         if (InetSocketAddress::IsMatchingType(m_peer))
             {
             NS_LOG_INFO ("At time " << Simulator::Now ().GetSeconds ()
@@ -301,6 +305,10 @@ namespace ns3
         /////////////////////////////////////////////////////////
         // Save all the neighboring nodes state (position + speed)
         /////////////////////////////////////////////////////////
+        if(speed > -1.0)
+            {
+            m_sumoCmdSetTrace(nodeId, senderId, xPos, yPos, speed);
+            }
         }
 
     void VanetMonitorApplication::ConnectionSucceeded (Ptr<Socket>)

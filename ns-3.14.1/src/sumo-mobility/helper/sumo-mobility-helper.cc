@@ -51,14 +51,16 @@ namespace ns3
     // Declare static member variables
     static std::map<int, Vector> currPos;
     static std::map<int, double> currSpeed;
+    static MSVehicleStateTable vehStateTbl;
+
     static void GetVehicleStatus(string path, int nId, double* x, double* y,
             double* spd);
-    static void SetVehicleStatus(string path, int nId, double x, double y,
-                double spd);
+    static void SetVehicleStatus(string path, int nodeId, int senderId,
+            double x, double y, double spd);
 
     SumoMobilityHelper::SumoMobilityHelper(int traciPort,
                                             std::string traciHost,
-                                            MSVehicleStateTable* ptrVehStateTable,
+                                            //MSVehicleStateTable* ptrVSTable,
                                             int simStartTime,
                                             int simStopTime,
                                             ApplicationContainer* appCont,
@@ -66,6 +68,9 @@ namespace ns3
         {
         //Initialize
         lastNodeIdSeen = 0;
+#if 0
+        m_ptrVehStateTbl = ptrVSTable;
+#endif
         simulatorStartTime = simStartTime;
         simulatorStopTime = simStopTime;
         m_nodelist_begin = NodeList::Begin();
@@ -73,19 +78,18 @@ namespace ns3
         m_app_container = appCont;
         m_app = app;
 
-
         // First, attach mobility model for all nodes in ns3.
         SetMobilityModelForAll();
 
         // Prepare the Traci Client
-        m_traci_client = new NetsimTraciClient(ptrVehStateTable,
+        m_traci_client = new NetsimTraciClient(//m_ptrVehStateTbl,
                                                simulatorStartTime,
                                                simulatorStopTime,
                                                "traciClientDebug.out");
         m_traci_client->start(traciPort, traciHost);
 
         // Start Mobility helper
-        m_event = Simulator::Schedule(Seconds(0.1),
+        m_event = Simulator::Schedule(Seconds(0.01),
                                       &SumoMobilityHelper::StartMotionUpdate,
                                       this);
         }
@@ -118,8 +122,17 @@ namespace ns3
 
     void SumoMobilityHelper::StartMotionUpdate()
         {
-        // Move simulation in SUMO. This will also update the state table
-        // of all the vehicles.
+        // Send the last vehicle state table update to SUMO.
+        // This should be done before advancing SUMO simulation. Because
+        // SUMO should have last state update before calculating next state.
+        //m_ptrVehStateTbl->testFillVSTable();
+        //m_traci_client->sendVSTable();
+        //m_ptrVehStateTbl->clearVehicleStateTable();
+        vehStateTbl.testFillVSTable();
+        m_traci_client->sendVSTable(&vehStateTbl);
+        vehStateTbl.clearVehicleStateTable();
+
+        // Move simulation in SUMO.
         m_traci_client->advanceSumoStep();
 
         // Move nodes in Ns3
@@ -144,9 +157,7 @@ namespace ns3
 
             int nodeId = m_vehicleNodeMap[vState.Id];
             Ptr<ConstantVelocityMobilityModel> model = 0;
-#if 0
-            NS_LOG_DEBUG ("Vehicle Id: "<< vState.Id << " Node Id: " << nodeId);
-#endif
+
             if (firstSeen == true)
                 {
                 // Attach application and mobility model
@@ -182,10 +193,6 @@ namespace ns3
             else
                 {
                 // Node seen second time onwards
-#if 0
-                NS_LOG_DEBUG ("Last Destination for node " << " " << nodeId
-                        << " = " << m_lastMotionUpdate[nodeId].m_finalPosition);
-#endif
                 double now = Simulator::Now().GetSeconds();
                 if (m_lastMotionUpdate[nodeId].m_targetArrivalTime > now)
                     {
@@ -210,16 +217,9 @@ namespace ns3
                     NS_LOG_DEBUG (" Node:" << nodeId <<
                                     " vehicle:" << vState.Id <<
                                     " reached = " << reached <<
-                                    " dest = " << m_lastMotionUpdate[nodeId].m_finalPosition);
+                                    " old dest = " << m_lastMotionUpdate[nodeId].m_finalPosition <<
+                                    " new dest = " << vState.pos_x << ":" <<vState.pos_y);
 
-#if 0
-                    NS_LOG_DEBUG ("Did not reach a destination! stoptime = " <<
-                            m_lastMotionUpdate[nodeId].m_targetArrivalTime <<
-                            ", now = " << now);
-
-                    NS_LOG_DEBUG ("Reached position for node " << " " << nodeId
-                            << " = " << reached);
-#endif
                     }
                 else
                     {
@@ -230,15 +230,8 @@ namespace ns3
 
                     NS_LOG_DEBUG (" Node:" << nodeId <<
                                     " vehicle:" << vState.Id <<
-                                    " reached = " << m_lastMotionUpdate[nodeId].m_finalPosition);
-#if 0
-                    NS_LOG_DEBUG ("Reach a destination! stoptime = " <<
-                          m_lastMotionUpdate[nodeId].m_targetArrivalTime <<
-                          ", now = " << now);
-
-                    NS_LOG_DEBUG ("Reached position for node " << " " << nodeId
-                          << " position =" << currPos[nodeId]);
-#endif
+                                    " reached = " << m_lastMotionUpdate[nodeId].m_finalPosition <<
+                                    " new dest = " << vState.pos_x << ":" <<vState.pos_y);
                     }
 
                 // Update current speed
@@ -259,9 +252,6 @@ namespace ns3
                                                          vState.speed);
                 }
             }
-
-        // Send the vehicle state table to SUMO
-        m_traci_client->sendVSTable();
 
         // Schedule for next round
         m_event = Simulator::Schedule(Seconds(1.0),
@@ -476,8 +466,8 @@ namespace ns3
 
         }
 
-    void SetVehicleStatus(string path, int nId, double xPos, double yPos,
-               double spd)
+    void SetVehicleStatus(string path, int nodeId, int senderId,
+            double xPos, double yPos, double spd)
         {
         }
 

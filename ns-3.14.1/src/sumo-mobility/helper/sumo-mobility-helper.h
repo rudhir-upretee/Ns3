@@ -51,7 +51,7 @@ namespace ns3
          */
         SumoMobilityHelper(int traciPort,
                             std::string traciHost,
-                            MSVehicleStateTable* ptrVehStateTable,
+                            //MSVehicleStateTable* ptrVSTable,
                             int simulatorStartTime,
                             int simulatorStopTime,
                             ApplicationContainer* appCont,
@@ -107,6 +107,11 @@ namespace ns3
         NetsimTraciClient* m_traci_client;
         ApplicationContainer* m_app_container;
         VanetMonitorHelper* m_app;
+
+#if 0
+        /// @brief Contains broadcasted state of all the neighboring vehicles
+        MSVehicleStateTable* m_ptrVehStateTbl;
+#endif
 
         int lastNodeIdSeen;
         int simulatorStartTime;

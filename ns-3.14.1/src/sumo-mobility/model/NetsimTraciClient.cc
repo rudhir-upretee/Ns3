@@ -40,11 +40,11 @@
 // ===========================================================================
 // method definitions
 // ===========================================================================
-NetsimTraciClient::NetsimTraciClient(MSVehicleStateTable* ptrVehStateTble,
+NetsimTraciClient::NetsimTraciClient(//MSVehicleStateTable* ptrVehStateTble,
                                     SUMOTime currTime,
                                     SUMOTime endTime,
                                     std::string outputFile)
-    : m_ptrVehStateTbl(ptrVehStateTble),
+    : //m_ptrVehStateTbl(ptrVehStateTble),
       currTimeInSec(currTime),
       endTimeInSec(endTime),
       outputFileName(outputFile),
@@ -91,6 +91,10 @@ NetsimTraciClient::run(int port, std::string host) {
         return false;
     }
 
+    // Create a vstable for testing
+    MSVehicleStateTable* ptrVehStateTbl = new MSVehicleStateTable();
+    ptrVehStateTbl->testFillVSTable();
+
     // Subscribe command ID_LIST to list ids of all vehicles
     // currently running within the scenario. This is one time
     // subscription.
@@ -112,11 +116,8 @@ NetsimTraciClient::run(int port, std::string host) {
 
         displayActiveLists();
 
-        // Update Ns3 Mobility Model
-
         // Send Vehicle state table to SUMO. This table is
-        // updated by Ns3 applications running on different nodes.
-        commandSetValueVehicleStateTable();
+        commandSetValueVehicleStateTable(ptrVehStateTbl);
         }
 
 #if 0
@@ -175,11 +176,11 @@ void NetsimTraciClient::advanceSumoStep()
     currTimeInSec++;
     }
 
-void NetsimTraciClient::sendVSTable()
+void NetsimTraciClient::sendVSTable(MSVehicleStateTable* ptrVehStateTbl)
     {
     // Send Vehicle state table to SUMO. This table is
     // updated by Ns3 applications running on different nodes.
-    commandSetValueVehicleStateTable();
+    commandSetValueVehicleStateTable(ptrVehStateTbl);
     }
 
 // ---------- Commands handling
@@ -270,15 +271,21 @@ NetsimTraciClient::commandSetValue(int domID, int varID, const std::string& objI
     }
 }
 
-void NetsimTraciClient::commandSetValueVehicleStateTable() {
+void NetsimTraciClient::commandSetValueVehicleStateTable(MSVehicleStateTable* ptrVehStateTbl) {
     tcpip::Storage tmp, inMsg;
     int cmdId = CMD_SET_VEHICLE_STATE_TABLE;
     int varId = VAR_SPEED;
     std::string objId = "VST0";
 
-    int listCnt = m_ptrVehStateTbl->getTableListCount();
-    int itemNumber = listCnt + m_ptrVehStateTbl->getTableListItemCount();
+    int listCnt = ptrVehStateTbl->getTableListCount();
+    int itemNumber = listCnt + ptrVehStateTbl->getTableListItemCount();
     answerLog << "listCnt: " << listCnt << " itemNumber: " << itemNumber << std::endl;
+
+    if(listCnt == 0)
+        {
+        answerLog << "VSTable is empty" << std::endl;
+        return;
+        }
 
     tmp.writeUnsignedByte(TYPE_COMPOUND);
     tmp.writeInt(itemNumber);
@@ -286,14 +293,14 @@ void NetsimTraciClient::commandSetValueVehicleStateTable() {
 
     for (int i = 0; i < listCnt; ++i)
         {
-        std::string vehId = m_ptrVehStateTbl->getReceiverVehicleIdAt(i);
+        std::string vehId = ptrVehStateTbl->getReceiverVehicleIdAt(i);
 
         tmp.writeUnsignedByte(TYPE_STRING);
         tmp.writeString(vehId);
         length += 1 + 4 + vehId.length();
 
         std::vector<MSVehicleStateTable::VehicleState> listItem =
-                m_ptrVehStateTbl->getSenderVehicleListAt(i);
+                ptrVehStateTbl->getSenderVehicleListAt(i);
         for(unsigned int j = 0; j < listItem.size(); j++)
             {
             tmp.writeUnsignedByte(TYPE_COMPOUND);
