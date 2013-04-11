@@ -33,8 +33,7 @@ public:
     /** @brief Constructor
      * @param[in] outputFileName The name of the file the outputs will be written into
      */
-    NetsimTraciClient(//MSVehicleStateTable* ptrVehStateTble,
-                    SUMOTime currTime = 0,
+    NetsimTraciClient(SUMOTime currTime = 0,
                     SUMOTime endtime = 0,
                     std::string outputFileName = "traciClientDebug.out");
 
@@ -47,7 +46,6 @@ public:
      * @param[in] port The server port to connect to
      * @param[in] host The server name to connect to
      */
-    //bool run(std::string fileName, int port, std::string host = "localhost");
     bool run(int port, std::string host = "localhost");
 
     bool start(int traciPort, std::string traciHost);
@@ -55,14 +53,6 @@ public:
     void sendVSTable(MSVehicleStateTable* ptrVehStateTbl);
     void advanceSumoStep();
 
-#if 0
-    typedef struct
-        {
-        double speed;
-        double pos_x;
-        double pos_y;
-        }SpeedPos;
-#endif
     int getVehicleStateListCnt();
     MSVehicleStateTable::VehicleState getVehicleStateListAt(int i);
 
@@ -126,15 +116,6 @@ protected:
 
 
 private:
-#if 0
-    /// @name Report helper
-    /// @{
-
-    /** @brief Writes the results file
-     */
-    void writeResult();
-#endif
-
     /** @brief Writes an error message
      * @param[in] msg The message to write
      */
@@ -193,11 +174,6 @@ private:
 
 
 private:
-#if 0
-    /// @brief Contains broadcasted state of all the neighboring vehicles
-    MSVehicleStateTable* m_ptrVehStateTbl;
-#endif
-
     /// @brief This list contains all vehicles subscribed for command VAR_SPEED and VAR_POSITION.
     typedef std::map<std::string, MSVehicleStateTable::VehicleState > VehicleStateList;
     VehicleStateList m_vehicleStateList;

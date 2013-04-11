@@ -40,8 +40,7 @@
 // ===========================================================================
 // method definitions
 // ===========================================================================
-NetsimTraciClient::NetsimTraciClient(//MSVehicleStateTable* ptrVehStateTble,
-                                    SUMOTime currTime,
+NetsimTraciClient::NetsimTraciClient(SUMOTime currTime,
                                     SUMOTime endTime,
                                     std::string outputFile)
     : //m_ptrVehStateTbl(ptrVehStateTble),
@@ -56,12 +55,6 @@ NetsimTraciClient::NetsimTraciClient(//MSVehicleStateTable* ptrVehStateTble,
     m_tmpVehicleState.pos_x = 0.0;
     m_tmpVehicleState.pos_y = 0.0;
 
-#if 0
-    answerLog.setf(std::ios::fixed , std::ios::floatfield); // use decimal format
-    answerLog.setf(std::ios::showpoint); // print decimal point
-    answerLog << std::setprecision(2);
-#endif
-
     time_t seconds;
     tm* locTime;
     time(&seconds);
@@ -71,9 +64,7 @@ NetsimTraciClient::NetsimTraciClient(//MSVehicleStateTable* ptrVehStateTble,
 }
 
 NetsimTraciClient::~NetsimTraciClient() {
-#if 0
-    writeResult();
-#endif
+
 }
 
 bool
@@ -120,9 +111,6 @@ NetsimTraciClient::run(int port, std::string host) {
         commandSetValueVehicleStateTable(ptrVehStateTbl);
         }
 
-#if 0
-    writeResult();
-#endif
     close();
     return true;
 }
@@ -148,9 +136,6 @@ bool NetsimTraciClient::start(int port, std::string host)
 void NetsimTraciClient::close()
     {
     commandClose();
-#if 0
-    writeResult();
-#endif
     }
 
 void NetsimTraciClient::advanceSumoStep()
@@ -845,22 +830,6 @@ void NetsimTraciClient::displayActiveLists()
         }
     answerLog << std::endl;
     }
-
-#if 0
-void NetsimTraciClient::writeResult() {
-    time_t seconds;
-    tm* locTime;
-    std::ofstream outFile(outputFileName.c_str());
-    if (!outFile) {
-        std::cerr << "Unable to write result file" << std::endl;
-    }
-    time(&seconds);
-    locTime = localtime(&seconds);
-    outFile << "NetsimTraciClient output file. Date: " << asctime(locTime) << std::endl;
-    outFile << answerLog.str();
-    outFile.close();
-}
-#endif
 
 void NetsimTraciClient::errorMsg(std::stringstream& msg) {
     std::cerr << msg.str() << std::endl;

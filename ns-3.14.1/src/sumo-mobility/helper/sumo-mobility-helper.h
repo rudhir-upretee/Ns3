@@ -32,7 +32,6 @@
 #include "ns3/node-list.h"
 #include "ns3/node.h"
 #include "ns3/application-container.h"
-//#include "ns3/applications-module.h"
 #include "ns3/vanet-monitor-helper.h"
 #include "ns3/MSVehicleStateTable.h"
 #include "ns3/NetsimTraciClient.h"
@@ -51,7 +50,6 @@ namespace ns3
          */
         SumoMobilityHelper(int traciPort,
                             std::string traciHost,
-                            //MSVehicleStateTable* ptrVSTable,
                             int simulatorStartTime,
                             int simulatorStopTime,
                             ApplicationContainer* appCont,
@@ -98,8 +96,8 @@ namespace ns3
             };
         std::map<int, DestinationPoint> m_lastMotionUpdate;
 
-        typedef std::map<std::string, int > VehicleNodeMap;
-        VehicleNodeMap m_vehicleNodeMap;
+        typedef std::map<std::string, int > VehicleToNodeMap;
+        VehicleToNodeMap m_vehicleToNodeMap;
 
         EventId m_event;
         NodeList::Iterator m_nodelist_begin;
@@ -107,11 +105,6 @@ namespace ns3
         NetsimTraciClient* m_traci_client;
         ApplicationContainer* m_app_container;
         VanetMonitorHelper* m_app;
-
-#if 0
-        /// @brief Contains broadcasted state of all the neighboring vehicles
-        MSVehicleStateTable* m_ptrVehStateTbl;
-#endif
 
         int lastNodeIdSeen;
         int simulatorStartTime;

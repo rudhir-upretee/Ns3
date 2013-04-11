@@ -84,15 +84,6 @@ int main(int argc, char *argv[])
     Ipv4InterfaceContainer wifiInterfaces;
     wifiInterfaces = address.Assign(staDevices);
 
-#if 0
-    //////////////////////////////////////////////////////////////////////////
-    //
-    // Create vehicle state table
-    //
-    //////////////////////////////////////////////////////////////////////////
-    MSVehicleStateTable* ptrVehStateTable = new MSVehicleStateTable();
-#endif
-
     //////////////////////////////////////////////////////////////////////////
     //
     // Configure Applications to be installed on the nodes.

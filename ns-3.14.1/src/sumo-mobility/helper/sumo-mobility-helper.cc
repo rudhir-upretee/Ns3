@@ -49,9 +49,12 @@ using namespace std;
 namespace ns3
     {
     // Declare static member variables
-    static std::map<int, Vector> currPos;
-    static std::map<int, double> currSpeed;
+    static std::map<int, Vector> nextPos;
+    static std::map<int, double> nextSpeed;
     static MSVehicleStateTable vehStateTbl;
+
+    typedef std::map<int, std::string> NodeToVehicleMap;
+    static NodeToVehicleMap nodeToVehicleMap;
 
     static void GetVehicleStatus(string path, int nId, double* x, double* y,
             double* spd);
@@ -60,7 +63,6 @@ namespace ns3
 
     SumoMobilityHelper::SumoMobilityHelper(int traciPort,
                                             std::string traciHost,
-                                            //MSVehicleStateTable* ptrVSTable,
                                             int simStartTime,
                                             int simStopTime,
                                             ApplicationContainer* appCont,
@@ -68,9 +70,6 @@ namespace ns3
         {
         //Initialize
         lastNodeIdSeen = 0;
-#if 0
-        m_ptrVehStateTbl = ptrVSTable;
-#endif
         simulatorStartTime = simStartTime;
         simulatorStopTime = simStopTime;
         m_nodelist_begin = NodeList::Begin();
@@ -125,10 +124,7 @@ namespace ns3
         // Send the last vehicle state table update to SUMO.
         // This should be done before advancing SUMO simulation. Because
         // SUMO should have last state update before calculating next state.
-        //m_ptrVehStateTbl->testFillVSTable();
-        //m_traci_client->sendVSTable();
-        //m_ptrVehStateTbl->clearVehicleStateTable();
-        vehStateTbl.testFillVSTable();
+        //vehStateTbl.testFillVSTable();
         m_traci_client->sendVSTable(&vehStateTbl);
         vehStateTbl.clearVehicleStateTable();
 
@@ -150,12 +146,15 @@ namespace ns3
 
             if(isVehicleSeenFirstTime(vState.Id))
                 {
-                m_vehicleNodeMap.insert(std::make_pair(vState.Id, lastNodeIdSeen++));
+                // Update both Maps
+                m_vehicleToNodeMap.insert(std::make_pair(vState.Id, lastNodeIdSeen));
+                nodeToVehicleMap.insert(std::make_pair(lastNodeIdSeen, vState.Id));
+                lastNodeIdSeen++;
 
                 firstSeen = true;
                 }
 
-            int nodeId = m_vehicleNodeMap[vState.Id];
+            int nodeId = m_vehicleToNodeMap[vState.Id];
             Ptr<ConstantVelocityMobilityModel> model = 0;
 
             if (firstSeen == true)
@@ -182,8 +181,8 @@ namespace ns3
 
                 // Update the m_lastMotionUpdate and position reached vector
                 m_lastMotionUpdate[nodeId] = point;
-                currPos[nodeId] = point.m_startPosition;
-                currSpeed[nodeId] = vState.speed;
+                nextPos[nodeId] = point.m_startPosition;
+                nextSpeed[nodeId] = vState.speed;
 
                 NS_LOG_DEBUG (" Node:" << nodeId <<
                                 " vehicle:" << vState.Id <<
@@ -211,8 +210,10 @@ namespace ns3
                     m_lastMotionUpdate[nodeId].m_stopEvent.Cancel();
                     m_lastMotionUpdate[nodeId].m_finalPosition = reached;
 
+#if 0
                     // Update the position reached vector
-                    currPos[nodeId] = reached;
+                    nextPos[nodeId] = reached;
+#endif
 
                     NS_LOG_DEBUG (" Node:" << nodeId <<
                                     " vehicle:" << vState.Id <<
@@ -223,19 +224,18 @@ namespace ns3
                     }
                 else
                     {
+#if 0
                     // Update the position reached vector
-                    currPos[nodeId].x = m_lastMotionUpdate[nodeId].m_finalPosition.x;
-                    currPos[nodeId].y = m_lastMotionUpdate[nodeId].m_finalPosition.y;
-                    currPos[nodeId].z = m_lastMotionUpdate[nodeId].m_finalPosition.z;
+                    nextPos[nodeId].x = m_lastMotionUpdate[nodeId].m_finalPosition.x;
+                    nextPos[nodeId].y = m_lastMotionUpdate[nodeId].m_finalPosition.y;
+                    nextPos[nodeId].z = m_lastMotionUpdate[nodeId].m_finalPosition.z;
+#endif
 
                     NS_LOG_DEBUG (" Node:" << nodeId <<
                                     " vehicle:" << vState.Id <<
                                     " reached = " << m_lastMotionUpdate[nodeId].m_finalPosition <<
                                     " new dest = " << vState.pos_x << ":" <<vState.pos_y);
                     }
-
-                // Update current speed
-                currSpeed[nodeId] = vState.speed;
 
                 // Get mobility model
                 model = GetMobilityModel(nodeId);
@@ -250,6 +250,12 @@ namespace ns3
                                                          vState.pos_x,
                                                          vState.pos_y,
                                                          vState.speed);
+
+                // Update nextPos and nextSpeed
+                nextPos[nodeId].x = vState.pos_x;
+                nextPos[nodeId].y = vState.pos_y;
+                nextPos[nodeId].z = 0;
+                nextSpeed[nodeId] = vState.speed;
                 }
             }
 
@@ -412,8 +418,8 @@ namespace ns3
 
     bool SumoMobilityHelper::isVehicleSeenFirstTime(string vehicleId)
         {
-        VehicleNodeMap::iterator vIter = m_vehicleNodeMap.find(vehicleId);
-        if (vIter == m_vehicleNodeMap.end())
+        VehicleToNodeMap::iterator vIter = m_vehicleToNodeMap.find(vehicleId);
+        if (vIter == m_vehicleToNodeMap.end())
             {
             return true;
             }
@@ -453,22 +459,42 @@ namespace ns3
             return;
             }
 
-        if(nodeId >= (int)currPos.size())
+        if(nodeId >= (int)nextPos.size())
             {
             NS_LOG_ERROR("No matching node Id");
             *spd = -1.0;
             return;
             }
 
-        *xPos = currPos[nodeId].x;
-        *yPos = currPos[nodeId].y;
-        *spd = currSpeed[nodeId];
-
+        *xPos = nextPos[nodeId].x;
+        *yPos = nextPos[nodeId].y;
+        *spd = nextSpeed[nodeId];
         }
 
     void SetVehicleStatus(string path, int nodeId, int senderId,
             double xPos, double yPos, double spd)
         {
+        NodeToVehicleMap::iterator vIter1 = nodeToVehicleMap.find(nodeId);
+        if (vIter1 == nodeToVehicleMap.end())
+            {
+            NS_LOG_DEBUG("Mapping for nodeId:" << nodeId << " Not Found!");
+            return;
+            }
+
+        NodeToVehicleMap::iterator vIter2 = nodeToVehicleMap.find(senderId);
+        if (vIter2 == nodeToVehicleMap.end())
+            {
+            NS_LOG_DEBUG("Mapping for senderId:" << senderId << " Not Found!");
+            return;
+            }
+
+        std::string vehId = vIter1->second;
+        MSVehicleStateTable::VehicleState vState;
+        vState.Id = vIter2->second;
+        vState.pos_x = xPos;
+        vState.pos_y = yPos;
+        vState.speed = spd;
+        vehStateTbl.addValueVehicleState(vehId, vState);
         }
 
     }  // namespace ns3

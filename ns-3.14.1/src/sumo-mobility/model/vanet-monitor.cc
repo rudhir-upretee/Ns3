@@ -145,9 +145,8 @@ namespace ns3
         /////////////////////////////////////////////////////////
         // Get the nodes state (position + speed)
         /////////////////////////////////////////////////////////
-#if 0
         m_sumoCmdGetTrace(id, &xPos, &yPos, &speed);
-#endif
+#if 0
         Ptr<ConstantVelocityMobilityModel> model = 0;
         model = GetMobilityModel();
         if (model == 0)
@@ -165,7 +164,7 @@ namespace ns3
             xPos = pos.x;
             yPos = pos.y;
             }
-
+#endif
         /////////////////////////////////////////////////////////
         // Broadcast state only if the state is valid
         /////////////////////////////////////////////////////////
