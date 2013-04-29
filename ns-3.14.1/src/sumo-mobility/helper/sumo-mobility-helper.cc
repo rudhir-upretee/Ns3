@@ -51,15 +51,16 @@ namespace ns3
     // Declare static member variables
     static std::map<int, Vector> nextPos;
     static std::map<int, double> nextSpeed;
+    static std::map<int, double> nextPosOnLane;
     static MSVehicleStateTable vehStateTbl;
 
     typedef std::map<int, std::string> NodeToVehicleMap;
     static NodeToVehicleMap nodeToVehicleMap;
 
     static void GetVehicleStatus(string path, int nId, double* x, double* y,
-            double* spd);
+            double* spd, double* posOnLane);
     static void SetVehicleStatus(string path, int nodeId, int senderId,
-            double x, double y, double spd);
+            double x, double y, double spd, double posOnLane);
 
     SumoMobilityHelper::SumoMobilityHelper(int traciPort,
                                             std::string traciHost,
@@ -183,6 +184,7 @@ namespace ns3
                 m_lastMotionUpdate[nodeId] = point;
                 nextPos[nodeId] = point.m_startPosition;
                 nextSpeed[nodeId] = vState.speed;
+                nextPosOnLane[nodeId] = vState.pos_on_lane;
 
                 NS_LOG_DEBUG (" Node:" << nodeId <<
                                 " vehicle:" << vState.Id <<
@@ -256,6 +258,7 @@ namespace ns3
                 nextPos[nodeId].y = vState.pos_y;
                 nextPos[nodeId].z = 0;
                 nextSpeed[nodeId] = vState.speed;
+                nextPosOnLane[nodeId] = vState.pos_on_lane;
                 }
             }
 
@@ -449,7 +452,7 @@ namespace ns3
         }
 
     void GetVehicleStatus(string path, int nodeId, double* xPos, double* yPos,
-            double* spd)
+            double* spd, double* posOnLane)
 
         {
         if ((xPos == NULL) || (yPos == NULL) || (spd == NULL))
@@ -469,10 +472,11 @@ namespace ns3
         *xPos = nextPos[nodeId].x;
         *yPos = nextPos[nodeId].y;
         *spd = nextSpeed[nodeId];
+        *posOnLane = nextPosOnLane[nodeId];
         }
 
     void SetVehicleStatus(string path, int nodeId, int senderId,
-            double xPos, double yPos, double spd)
+            double xPos, double yPos, double spd, double posOnLane)
         {
         NodeToVehicleMap::iterator vIter1 = nodeToVehicleMap.find(nodeId);
         if (vIter1 == nodeToVehicleMap.end())
@@ -494,6 +498,7 @@ namespace ns3
         vState.pos_x = xPos;
         vState.pos_y = yPos;
         vState.speed = spd;
+        vState.pos_on_lane = posOnLane;
         vehStateTbl.addValueVehicleState(vehId, vState);
         }
 

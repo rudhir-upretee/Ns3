@@ -124,6 +124,7 @@ void MSVehicleStateTable::displayVehicleList(std::vector<MSVehicleStateTable::Ve
         std::cout << "(" << vList.at(i).Id << ": " << vList.at(i).speed
                                             << ", " << vList.at(i).pos_x
                                             << ", " << vList.at(i).pos_y
+                                            << ", " << vList.at(i).pos_on_lane
                                             << ") ";
         }
     }
@@ -132,30 +133,30 @@ void MSVehicleStateTable::testFillVSTable()
     {
     VehicleState vs;
 
-    vs.Id = "veh0"; vs.speed = 1.0; vs.pos_x = 1.0; vs.pos_y = 1.0;
+    vs.Id = "veh0"; vs.speed = 1.0; vs.pos_x = 1.0; vs.pos_y = 1.0; vs.pos_on_lane = 1.0;
     addValueVehicleState("veh1", vs);
-    vs.Id = "veh2"; vs.speed = 1.2; vs.pos_x = 1.2; vs.pos_y= 1.2;
+    vs.Id = "veh2"; vs.speed = 1.2; vs.pos_x = 1.2; vs.pos_y= 1.2; vs.pos_on_lane = 1.2;
     addValueVehicleState("veh1", vs);
 
-    vs.Id = "veh1"; vs.speed = 0.1; vs.pos_x = 0.1; vs.pos_y = 0.1;
+    vs.Id = "veh1"; vs.speed = 0.1; vs.pos_x = 0.1; vs.pos_y = 0.1; vs.pos_on_lane = 0.1;
     addValueVehicleState("veh0", vs);
-    vs.Id = "veh2"; vs.speed = 0.2; vs.pos_x = 0.2; vs.pos_y = 0.2;
+    vs.Id = "veh2"; vs.speed = 0.2; vs.pos_x = 0.2; vs.pos_y = 0.2; vs.pos_on_lane = 0.2;
     addValueVehicleState("veh0", vs);
 
-    vs.Id = "veh1"; vs.speed = 3.1; vs.pos_x = 3.1; vs.pos_y = 3.1;
+    vs.Id = "veh1"; vs.speed = 3.1; vs.pos_x = 3.1; vs.pos_y = 3.1; vs.pos_on_lane = 3.1;
     addValueVehicleState("veh3", vs);
-    vs.Id = "veh2"; vs.speed = 3.2; vs.pos_x = 3.2; vs.pos_y = 3.2;
+    vs.Id = "veh2"; vs.speed = 3.2; vs.pos_x = 3.2; vs.pos_y = 3.2; vs.pos_on_lane = 3.2;
     addValueVehicleState("veh3", vs);
-    vs.Id = "veh4"; vs.speed = 3.4; vs.pos_x = 3.4; vs.pos_y = 3.4;
+    vs.Id = "veh4"; vs.speed = 3.4; vs.pos_x = 3.4; vs.pos_y = 3.4; vs.pos_on_lane = 3.4;
     addValueVehicleState("veh3", vs);
 
-    vs.Id = "veh3"; vs.speed = 2.3; vs.pos_x = 2.3; vs.pos_y = 2.3;
+    vs.Id = "veh3"; vs.speed = 2.3; vs.pos_x = 2.3; vs.pos_y = 2.3; vs.pos_on_lane = 2.3;
     addValueVehicleState("veh2", vs);
 
-    vs.Id = "veh1"; vs.speed = 4.1; vs.pos_x = 4.1; vs.pos_y = 4.1;
+    vs.Id = "veh1"; vs.speed = 4.1; vs.pos_x = 4.1; vs.pos_y = 4.1; vs.pos_on_lane = 4.1;
     addValueVehicleState("veh4", vs);
-    vs.Id = "veh2"; vs.speed = 4.2; vs.pos_x = 4.2; vs.pos_y = 4.2;
+    vs.Id = "veh2"; vs.speed = 4.2; vs.pos_x = 4.2; vs.pos_y = 4.2; vs.pos_on_lane = 4.2;
     addValueVehicleState("veh4", vs);
-    vs.Id = "veh3"; vs.speed = 4.3; vs.pos_x = 4.3; vs.pos_y = 4.3;
+    vs.Id = "veh3"; vs.speed = 4.3; vs.pos_x = 4.3; vs.pos_y = 4.3; vs.pos_on_lane = 4.3;
     addValueVehicleState("veh4", vs);
     }

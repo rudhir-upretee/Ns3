@@ -51,6 +51,7 @@ namespace ns3
         double xPos;
         double yPos;
         double speed;
+        double posOnLane;
         }PktBuf_t;
     static PktBuf_t packetBuf;
 
@@ -139,13 +140,13 @@ namespace ns3
         {
         NS_LOG_FUNCTION_NOARGS ();
 
-        double xPos = 0.0, yPos = 0.0, speed = -1.0;
+        double xPos = 0.0, yPos = 0.0, speed = -1.0, posOnLane = 0.0;
         int id = GetNode()->GetId();
 
         /////////////////////////////////////////////////////////
         // Get the nodes state (position + speed)
         /////////////////////////////////////////////////////////
-        m_sumoCmdGetTrace(id, &xPos, &yPos, &speed);
+        m_sumoCmdGetTrace(id, &xPos, &yPos, &speed, &posOnLane);
 #if 0
         Ptr<ConstantVelocityMobilityModel> model = 0;
         model = GetMobilityModel();
@@ -174,6 +175,7 @@ namespace ns3
             packetBuf.xPos = xPos;
             packetBuf.yPos = yPos;
             packetBuf.speed = speed;
+            packetBuf.posOnLane = posOnLane;
             SendPacket((uint8_t*)&packetBuf, sizeof(packetBuf));
             }
 
@@ -220,6 +222,7 @@ namespace ns3
                 << " x=" << ((PktBuf_t*)buf)->xPos
                 << " y=" << ((PktBuf_t*)buf)->yPos
                 << " spd=" << ((PktBuf_t*)buf)->speed
+                << " posOnLane=" << ((PktBuf_t*)buf)->posOnLane
                 << " )");
         Ptr<Packet> packet = Create<Packet> (buf, size);
 
@@ -256,7 +259,7 @@ namespace ns3
 
         Ptr<Packet> packet;
         PktBuf_t packetBuf;
-        double xPos = 0.0, yPos = 0.0, speed = -1.0;
+        double xPos = 0.0, yPos = 0.0, speed = -1.0, posOnLane = 0.0;
         int nodeId = -1, senderId = -1;
 
         /////////////////////////////////////////////////////////
@@ -271,6 +274,7 @@ namespace ns3
             xPos = packetBuf.xPos;
             yPos = packetBuf.yPos;
             speed = packetBuf.speed;
+            posOnLane = packetBuf.posOnLane;
 
             NS_LOG_DEBUG ("Receiver Node:" << nodeId
                     << " Packet("
@@ -278,6 +282,7 @@ namespace ns3
                     << " x=" << xPos
                     << " y=" << yPos
                     << " spd=" << speed
+                    << " posOnLane=" << posOnLane
                     << " )");
             }
 
@@ -306,7 +311,7 @@ namespace ns3
         /////////////////////////////////////////////////////////
         if(speed > -1.0)
             {
-            m_sumoCmdSetTrace(nodeId, senderId, xPos, yPos, speed);
+            m_sumoCmdSetTrace(nodeId, senderId, xPos, yPos, speed, posOnLane);
             }
         }
 

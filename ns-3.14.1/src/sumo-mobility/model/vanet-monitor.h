@@ -69,8 +69,8 @@ namespace ns3
         bool m_connected;  // True if connected
         EventId m_startStopEvent;  // Event id for next start or stop event
         TypeId m_tid;
-        TracedCallback<int, double*, double*, double*> m_sumoCmdGetTrace;
-        TracedCallback<int, int, double, double, double> m_sumoCmdSetTrace;
+        TracedCallback<int, double*, double*, double*, double*> m_sumoCmdGetTrace;
+        TracedCallback<int, int, double, double, double, double> m_sumoCmdSetTrace;
 
         };
 

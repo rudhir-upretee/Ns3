@@ -20,12 +20,28 @@ class MSVehicleStateTable
 
     void initVehicleStateTable();
     void clearVehicleStateTable();
+
+    /*
+     * Inputs
+     * Id         : Vehicle Id of broadcaster
+     * speed      : Current speed of broadcaster
+     * pos_x      : Current x Cartesian Coordinate of broadcaster. This is
+     *              needed by NS3 to drive its mobility model.
+     * pos_y      : Current y Cartesian Coordinate of broadcaster. This is
+     *              needed by NS3 to drive its mobility model.
+     * pos_on_lane: Position on lane of broadcaster. This is required
+     *              by SUMO because SUMO works with position on
+     *              lane variable. It can be calculated from pos_x and
+     *              pos_y but the conversion could make the values
+     *              different from the ones sent to NS3.
+     */
     typedef struct
          {
          std::string Id;
          double speed;
          double pos_x;
          double pos_y;
+         double pos_on_lane;
          }VehicleState;
     void addValueVehicleState(std::string Id, VehicleState& vState);
     std::string getReceiverVehicleIdAt(int index);

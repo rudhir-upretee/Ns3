@@ -24,7 +24,6 @@
 #include "TraCIConstants.h"
 #include "SUMOTime.h"
 #include "NetsimTraciClient.h"
-#include "MSVehicleStateTable.h"
 
 #ifdef CHECK_MEMORY_LEAKS
 #include <foreign/nvwa/debug_new.h>
@@ -289,8 +288,8 @@ void NetsimTraciClient::commandSetValueVehicleStateTable(MSVehicleStateTable* pt
         for(unsigned int j = 0; j < listItem.size(); j++)
             {
             tmp.writeUnsignedByte(TYPE_COMPOUND);
-            // Four items : Id, speed, pos_x, pos_y
-            tmp.writeInt(4);
+            // Five items : Id, speed, pos_x, pos_y, pos_on_lane
+            tmp.writeInt(5);
             length += 1 + 4;
 
             tmp.writeUnsignedByte(TYPE_STRING);
@@ -307,6 +306,10 @@ void NetsimTraciClient::commandSetValueVehicleStateTable(MSVehicleStateTable* pt
 
             tmp.writeUnsignedByte(TYPE_DOUBLE);
             tmp.writeDouble(listItem.at(j).pos_y);
+            length += 1 + 8;
+
+            tmp.writeUnsignedByte(TYPE_DOUBLE);
+            tmp.writeDouble(listItem.at(j).pos_on_lane);
             length += 1 + 8;
             }
         }
@@ -405,7 +408,7 @@ NetsimTraciClient::validateSubscription(tcpip::Storage& inMsg) {
 
             m_tmpVehicleState.Id = "null";
             if((cmdId == RESPONSE_SUBSCRIBE_VEHICLE_VARIABLE) &&
-                    (varNo == 2))
+                    (varNo == 3))
                 {
                 m_tmpVehicleState.Id = objId;
                 }
@@ -429,6 +432,7 @@ NetsimTraciClient::validateSubscription(tcpip::Storage& inMsg) {
                 tmpSpeedPos.speed = m_tmpVehicleState.speed;
                 tmpSpeedPos.pos_x = m_tmpVehicleState.pos_x;
                 tmpSpeedPos.pos_y = m_tmpVehicleState.pos_y;
+                tmpSpeedPos.pos_on_lane = m_tmpVehicleState.pos_on_lane;
                 //m_vehicleStateList[objId] = tmpSpeedPos;
                 m_vehicleStateList.insert(std::make_pair(objId, tmpSpeedPos));
                 }
@@ -617,16 +621,17 @@ NetsimTraciClient::readReportAndUpdateTypeDependent(int cmdId, int varId, std::s
         answerLog << " Double value: " << doublev << std::endl;
 
         // Check for cmdId and varId, then update the required table
-        if((cmdId == RESPONSE_SUBSCRIBE_VEHICLE_VARIABLE) &&
-                (varId == VAR_SPEED))
+        if(cmdId == RESPONSE_SUBSCRIBE_VEHICLE_VARIABLE)
             {
-            // After you receive speed, it is confirmed that the
-            // subscription was successful.
-            //m_subscribedVehicleList.push_back(objId);
+            if (varId == VAR_SPEED)
+                {
+                m_tmpVehicleState.speed = doublev;
+                }
 
-            // Update with proper speed value obtained from the message
-            //m_vehicleStateList[objId] = doublev;
-            m_tmpVehicleState.speed = doublev;
+            if(varId == VAR_LANEPOSITION)
+                {
+                m_tmpVehicleState.pos_on_lane = doublev;
+                }
             }
 
     } else if (valueDataType == TYPE_BOUNDINGBOX) {
@@ -754,6 +759,7 @@ void NetsimTraciClient::commandSubscribeSpeedAndPos(int currTimeInSec, int endTi
     std::vector<int> getVehVars;
     getVehVars.push_back(VAR_SPEED);
     getVehVars.push_back(VAR_POSITION);
+    getVehVars.push_back(VAR_LANEPOSITION);
 
     // m_vehicleStateList contains all vehicles subscribed
     // for command VAR_SPEED and VAR_POSITION. Check against this
@@ -797,6 +803,7 @@ MSVehicleStateTable::VehicleState NetsimTraciClient::getVehicleStateListAt(int i
         vState.speed = iter->second.speed;
         vState.pos_x = iter->second.pos_x;
         vState.pos_y = iter->second.pos_y;
+        vState.pos_on_lane = iter->second.pos_on_lane;
         }
 
     return vState;
