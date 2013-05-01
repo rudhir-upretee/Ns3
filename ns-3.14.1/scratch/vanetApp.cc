@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
     // Start simulation
     //
     NS_LOG_DEBUG ("Simulation Started......................................|");
-    Simulator::Stop(Seconds(simulatorStopTime));
+    Simulator::Stop(Seconds(simulatorStopTime - simulatorStartTime));
     Simulator::Run();
     Simulator::Destroy();
 
