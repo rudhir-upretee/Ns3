@@ -32,15 +32,15 @@ int main(int argc, char *argv[])
     int nWifi = 2;
     int traciPort = 50000;
     string traciHost = "localhost";
-    int simulatorStartTime = 0;
-    int simulatorStopTime = 0;
+    int sumoStartTimeOffset = 0;
+    int sumoStopTimeOffset = 0;
 
     CommandLine cmd;
     cmd.AddValue("nWifi", "Number of wifi STA devices", nWifi);
     cmd.AddValue("traciPort", "TRACI Server Port", traciPort);
     cmd.AddValue("traciHost", "TRACI Server Host", traciHost);
-    cmd.AddValue("simulatorStartTime", "Simulator start time", simulatorStartTime);
-    cmd.AddValue("simulatorStopTime", "Simulator stop time", simulatorStopTime);
+    cmd.AddValue("sumoStartTimeOffset", "Sumo start time offset", sumoStartTimeOffset);
+    cmd.AddValue("sumoStopTimeOffset", "Sumo stop time offset", sumoStopTimeOffset);
     cmd.Parse(argc, argv);
 
     ///////////////////////////////////////////////////////////////////////////
@@ -104,8 +104,8 @@ int main(int argc, char *argv[])
     SumoMobilityHelper sumoMobility = SumoMobilityHelper(traciPort,
                                                          traciHost,
                                                          //ptrVehStateTable,
-                                                         simulatorStartTime,
-                                                         simulatorStopTime,
+                                                         sumoStartTimeOffset,
+                                                         sumoStopTimeOffset,
                                                          &appContainerVanetApp,
                                                          &vanetApp);
 
@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
     // Start simulation
     //
     NS_LOG_DEBUG ("Simulation Started......................................|");
-    Simulator::Stop(Seconds(simulatorStopTime - simulatorStartTime));
+    Simulator::Stop(Seconds(sumoStopTimeOffset - sumoStartTimeOffset));
     Simulator::Run();
     Simulator::Destroy();
 

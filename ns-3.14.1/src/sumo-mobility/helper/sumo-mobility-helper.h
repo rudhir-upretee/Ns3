@@ -50,8 +50,8 @@ namespace ns3
          */
         SumoMobilityHelper(int traciPort,
                             std::string traciHost,
-                            int simulatorStartTime,
-                            int simulatorStopTime,
+                            int sumoStartTime,
+                            int sumoStopTime,
                             ApplicationContainer* appCont,
                             VanetMonitorHelper* app);
 
@@ -107,8 +107,8 @@ namespace ns3
         VanetMonitorHelper* m_app;
 
         int lastNodeIdSeen;
-        int simulatorStartTime;
-        int simulatorStopTime;
+        int sumoStartTimeOffset;
+        int sumoStopTimeOffset;
 
         void ConfigNodesMovements();
         Ptr<ConstantVelocityMobilityModel> GetMobilityModel(int id);

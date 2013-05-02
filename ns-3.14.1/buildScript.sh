@@ -47,4 +47,4 @@ TXPOWSTART="--ns3::YansWifiPhy::TxPowerStart=24"
 #./waf --run "main-random-walk" --vis
 ###############################################################################
 
-./waf --run "scratch/vanetApp $TXPOWEND $TXPOWSTART --nWifi=200 --traciPort=50000 --traciHost=localhost --simulatorStartTime=54000 --simulatorStopTime=54350" 
+./waf --run "scratch/vanetApp $TXPOWEND $TXPOWSTART --nWifi=200 --traciPort=50000 --traciHost=localhost --sumoStartTimeOffset=54000 --sumoStopTimeOffset=54350" --vis

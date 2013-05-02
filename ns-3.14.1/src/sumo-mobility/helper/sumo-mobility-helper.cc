@@ -64,15 +64,15 @@ namespace ns3
 
     SumoMobilityHelper::SumoMobilityHelper(int traciPort,
                                             std::string traciHost,
-                                            int simStartTime,
-                                            int simStopTime,
+                                            int sumoStartTime,
+                                            int sumoStopTime,
                                             ApplicationContainer* appCont,
                                             VanetMonitorHelper* app)
         {
         //Initialize
         lastNodeIdSeen = 0;
-        simulatorStartTime = simStartTime;
-        simulatorStopTime = simStopTime;
+        sumoStartTimeOffset = sumoStartTime;
+        sumoStopTimeOffset = sumoStopTime;
         m_nodelist_begin = NodeList::Begin();
         m_nodelist_end = NodeList::End();
         m_app_container = appCont;
@@ -83,8 +83,8 @@ namespace ns3
 
         // Prepare the Traci Client
         m_traci_client = new NetsimTraciClient(//m_ptrVehStateTbl,
-                                               simulatorStartTime,
-                                               simulatorStopTime,
+                                               sumoStartTimeOffset,
+                                               sumoStopTimeOffset,
                                                "traciClientDebug.out");
         m_traci_client->start(traciPort, traciHost);
 
@@ -438,7 +438,7 @@ namespace ns3
              UniformVariable randVarTime(0, 1);
              *m_app_container = m_app->Install(ptrNode);
              (*m_app_container).Start(Seconds(randVarTime.GetValue()));
-             (*m_app_container).Stop(Seconds(simulatorStopTime));
+             (*m_app_container).Stop(Seconds(sumoStopTimeOffset - sumoStartTimeOffset));
 
              // Trace sink should be attached after the source has been initialized.
              // Trace source are in VanetMonitorApplication. So this should be
