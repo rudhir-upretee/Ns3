@@ -4,5 +4,5 @@ def build(bld):
     if not bld.env['ENABLE_EXAMPLES']:
         return;
 
-    obj = bld.create_ns3_program('NetsimTraciClientMain', ['mobility', 'sumo-traci-client'])
+    obj = bld.create_ns3_program('NetsimTraciClientMain', ['mobility', 'sumo-mobility'])
     obj.source = 'NetsimTraciClientMain.cc'

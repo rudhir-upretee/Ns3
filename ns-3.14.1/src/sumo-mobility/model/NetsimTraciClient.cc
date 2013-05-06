@@ -29,6 +29,8 @@
 #include <foreign/nvwa/debug_new.h>
 #endif // CHECK_MEMORY_LEAKS
 
+#undef SUMO_VER_16
+#define SUMO_VER_17
 
 // ===========================================================================
 // used namespaces
@@ -98,7 +100,12 @@ NetsimTraciClient::run(int port, std::string host) {
         clearActiveLists();
 
         // Advance simulation
+#ifdef SUMO_VER_16
         commandSimulationStep(currTimeInSec);
+#endif
+#ifdef SUMO_VER_17
+        commandSimulationStep(currTimeInSec * 1000);
+#endif
 
         // Subscribe command VAR_SPEED and VAR_POSITION for every
         // new vehicle that entered the simulation
@@ -149,7 +156,12 @@ void NetsimTraciClient::advanceSumoStep()
     clearActiveLists();
 
     // Advance simulation
-    commandSimulationStep(currTimeInSec);
+#ifdef SUMO_VER_16
+        commandSimulationStep(currTimeInSec);
+#endif
+#ifdef SUMO_VER_17
+        commandSimulationStep(currTimeInSec * 1000);
+#endif
 
     displayActiveLists();
 

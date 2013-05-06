@@ -89,8 +89,8 @@ int main(int argc, char* argv[]) {
     ///////////////////////////////////////////
     // Start TraCI Sumo Client
     ///////////////////////////////////////////
-    MSVehicleStateTable* ptrVehStateTable = new MSVehicleStateTable();
-    NetsimTraciClient client(ptrVehStateTable,
+    //MSVehicleStateTable* ptrVehStateTable = new MSVehicleStateTable();
+    NetsimTraciClient client(//ptrVehStateTable,
                             string2time(strBeginTime)/1000,
                             string2time(strEndTime)/1000,
                             outFileName);
